@@ -5,6 +5,7 @@ import { pinoHttp } from 'pino-http';
 import type { DataSource } from 'typeorm';
 
 import { env } from './config/env.js';
+import { createInstrumentRouter } from './modules/instruments/instrument.routes.js';
 import { errorHandler } from './shared/middleware/error-handler.js';
 
 const logger = pino({ level: env.LOG_LEVEL });
@@ -31,6 +32,8 @@ export function createApp(dataSource: DataSource) {
       next(error);
     }
   });
+
+  app.use('/instruments', createInstrumentRouter(dataSource));
 
   app.use(errorHandler);
 
