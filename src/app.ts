@@ -2,9 +2,11 @@ import { randomUUID } from 'node:crypto';
 import express from 'express';
 import pino from 'pino';
 import { pinoHttp } from 'pino-http';
+import swaggerUi from 'swagger-ui-express';
 import type { DataSource } from 'typeorm';
 
 import { env } from './config/env.js';
+import { openApiDocument } from './docs/openapi.js';
 import { createInstrumentRouter } from './modules/instruments/instrument.routes.js';
 import { createOrderRouter } from './modules/orders/order.routes.js';
 import { createPortfolioRouter } from './modules/portfolio/portfolio.routes.js';
@@ -25,6 +27,12 @@ export function createApp(dataSource: DataSource) {
   app.get('/health', (_request, response) => {
     response.status(200).json({ status: 'ok' });
   });
+
+  app.get('/openapi.json', (_request, response) => {
+    response.status(200).json(openApiDocument);
+  });
+
+  app.use('/docs', swaggerUi.serve, swaggerUi.setup(openApiDocument));
 
   app.get('/ready', async (_request, response, next) => {
     try {
