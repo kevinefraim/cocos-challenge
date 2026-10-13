@@ -19,7 +19,12 @@ export function createApp(dataSource: DataSource) {
   const app = express();
 
   app.use(express.json());
-  app.use(pinoHttp({ logger, genReqId: (request) => request.headers['x-request-id']?.toString() ?? randomUUID() }));
+  app.use(
+    pinoHttp({
+      logger,
+      genReqId: (request) => request.headers['x-request-id']?.toString() ?? randomUUID(),
+    }),
+  );
   app.use((request, response, next) => {
     response.setHeader('x-request-id', String(request.id));
     next();

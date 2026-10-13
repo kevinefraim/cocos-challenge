@@ -37,4 +37,3 @@ export class MarketData {
   @JoinColumn({ name: 'instrumentid' })
   instrument!: Instrument;
 }
-

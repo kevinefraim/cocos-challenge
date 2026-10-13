@@ -33,7 +33,13 @@ export class OrderRepository {
     });
   }
 
-  create(manager: EntityManager, order: Pick<Order, 'instrumentId' | 'userId' | 'size' | 'price' | 'side' | 'status' | 'type' | 'datetime'>) {
+  create(
+    manager: EntityManager,
+    order: Pick<
+      Order,
+      'instrumentId' | 'userId' | 'size' | 'price' | 'side' | 'status' | 'type' | 'datetime'
+    >,
+  ) {
     return manager.getRepository(Order).save(manager.create(Order, order));
   }
 

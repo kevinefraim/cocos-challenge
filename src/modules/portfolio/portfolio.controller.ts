@@ -2,7 +2,7 @@ import type { NextFunction, Request, Response } from 'express';
 import { z } from 'zod';
 
 import { AppError } from '../../shared/errors/AppError.js';
-import { PortfolioService } from './portfolio.service.js';
+import type { PortfolioService } from './portfolio.service.js';
 
 const userParamsSchema = z.object({ userId: z.coerce.number().int().positive() });
 
@@ -19,7 +19,7 @@ export class PortfolioController {
 
     try {
       response.status(200).json({
-        ...await this.portfolioService.getPortfolio(parsedParams.data.userId),
+        ...(await this.portfolioService.getPortfolio(parsedParams.data.userId)),
         requestId: request.id,
       });
     } catch (error) {

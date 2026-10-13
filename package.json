@@ -9,9 +9,13 @@
     "build": "tsc -p tsconfig.json",
     "start": "node dist/server.js",
     "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "test": "vitest run --exclude tests/**/*.e2e.test.ts",
     "test:integration": "npm run test:e2e",
-    "test:e2e": "vitest run tests/api.e2e.test.ts --maxWorkers=1"
+    "test:e2e": "vitest run tests/api.e2e.test.ts --maxWorkers=1",
+    "test:coverage": "vitest run --coverage --maxWorkers=1"
   },
   "dependencies": {
     "decimal.js": "^10.6.0",
@@ -26,12 +30,18 @@
     "zod": "^3.24.2"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.5",
     "@types/express": "^5.0.3",
     "@types/node": "^24.3.0",
     "@types/pg": "^8.15.5",
     "@types/swagger-ui-express": "^4.1.8",
+    "@vitest/coverage-v8": "^5.0.4",
+    "eslint": "^9.39.5",
+    "eslint-config-prettier": "^10.1.8",
+    "prettier": "^3.9.10",
     "tsx": "^4.20.5",
     "typescript": "^5.9.2",
-    "vitest": "^3.2.4"
+    "typescript-eslint": "^8.71.2",
+    "vitest": "^5.0.4"
   }
 }

@@ -16,12 +16,12 @@ and a frontend.
 
 ## Domain model
 
-| Entity | Responsibility |
-| --- | --- |
-| `users` | Account holders. |
-| `instruments` | Securities and ARS cash (`type = MONEDA`). |
-| `marketdata` | Historic quotes; the most recent row is the current quote. |
-| `orders` | Record of cash movements, trades, and their status. |
+| Entity        | Responsibility                                             |
+| ------------- | ---------------------------------------------------------- |
+| `users`       | Account holders.                                           |
+| `instruments` | Securities and ARS cash (`type = MONEDA`).                 |
+| `marketdata`  | Historic quotes; the most recent row is the current quote. |
+| `orders`      | Record of cash movements, trades, and their status.        |
 
 `orders.size` is always a positive integer. `side` determines its economic
 sign. Money is represented as decimal values in ARS.

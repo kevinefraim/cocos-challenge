@@ -5,7 +5,7 @@ import type { Order } from '../../database/entities/Order.js';
 import { AppError } from '../../shared/errors/AppError.js';
 import { canCancelOrder, getInitialOrderStatus, type OrderStatus } from './order-state-machine.js';
 import { MAX_ORDER_SIZE, type CreateOrderInput } from './order.schemas.js';
-import { OrderRepository } from './order.repository.js';
+import type { OrderRepository } from './order.repository.js';
 
 type CreateOrderResult = {
   order: ReturnType<OrderService['serializeOrder']>;
@@ -35,13 +35,19 @@ export class OrderService {
       const quote = await this.orderRepository.findLatestMarketData(manager, instrument.id);
 
       if (!quote) {
-        throw new AppError('MARKET_DATA_NOT_FOUND', 409, 'No current market price is available for this instrument');
+        throw new AppError(
+          'MARKET_DATA_NOT_FOUND',
+          409,
+          'No current market price is available for this instrument',
+        );
       }
 
-      const effectivePrice = input.type === 'MARKET' ? new Decimal(quote.close) : new Decimal(input.price!);
-      const derivedQuantity = input.quantity === undefined
-        ? new Decimal(input.amount!).div(effectivePrice).floor()
-        : new Decimal(input.quantity);
+      const effectivePrice =
+        input.type === 'MARKET' ? new Decimal(quote.close) : new Decimal(input.price!);
+      const derivedQuantity =
+        input.quantity === undefined
+          ? new Decimal(input.amount!).div(effectivePrice).floor()
+          : new Decimal(input.quantity);
 
       if (derivedQuantity.lessThan(1)) {
         throw new AppError('AMOUNT_TOO_LOW', 400, 'Amount is too low to purchase one share');
@@ -54,7 +60,9 @@ export class OrderService {
       const quantity = derivedQuantity.toNumber();
 
       const filledOrders = await this.orderRepository.findFilledOrders(manager, user.id);
-      const hasSufficientCash = this.calculateAvailableCash(filledOrders).greaterThanOrEqualTo(effectivePrice.mul(quantity));
+      const hasSufficientCash = this.calculateAvailableCash(filledOrders).greaterThanOrEqualTo(
+        effectivePrice.mul(quantity),
+      );
       const hasSufficientHoldings = this.calculateHolding(filledOrders, instrument.id) >= quantity;
       const hasSufficientBalance = input.side === 'BUY' ? hasSufficientCash : hasSufficientHoldings;
       const status = getInitialOrderStatus(input.type, hasSufficientBalance);
@@ -72,9 +80,12 @@ export class OrderService {
 
       return {
         order: this.serializeOrder(order),
-        rejectionReason: status === 'REJECTED'
-          ? input.side === 'BUY' ? 'INSUFFICIENT_CASH' : 'INSUFFICIENT_HOLDINGS'
-          : undefined,
+        rejectionReason:
+          status === 'REJECTED'
+            ? input.side === 'BUY'
+              ? 'INSUFFICIENT_CASH'
+              : 'INSUFFICIENT_HOLDINGS'
+            : undefined,
       };
     });
   }

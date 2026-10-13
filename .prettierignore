@@ -1,0 +1,8 @@
+node_modules/
+dist/
+coverage/
+backend-challenge.md
+frontend-challenge.md
+fullstack-challenge.md
+qa-challenge.md
+react-native-challenge.md

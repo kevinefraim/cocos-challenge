@@ -45,4 +45,3 @@ export class Order {
   @JoinColumn({ name: 'instrumentid' })
   instrument!: Instrument;
 }
-

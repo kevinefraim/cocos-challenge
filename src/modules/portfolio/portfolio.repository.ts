@@ -1,6 +1,5 @@
 import type { DataSource } from 'typeorm';
 
-import { Instrument } from '../../database/entities/Instrument.js';
 import { MarketData } from '../../database/entities/MarketData.js';
 import { Order } from '../../database/entities/Order.js';
 import { User } from '../../database/entities/User.js';

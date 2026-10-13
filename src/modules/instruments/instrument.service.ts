@@ -1,5 +1,5 @@
 import type { SearchInstrumentsQuery } from './instrument.schemas.js';
-import { InstrumentRepository } from './instrument.repository.js';
+import type { InstrumentRepository } from './instrument.repository.js';
 
 export class InstrumentService {
   constructor(private readonly instrumentRepository: InstrumentRepository) {}

@@ -2,7 +2,7 @@ import type { NextFunction, Request, Response } from 'express';
 
 import { AppError } from '../../shared/errors/AppError.js';
 import { searchInstrumentsQuerySchema } from './instrument.schemas.js';
-import { InstrumentService } from './instrument.service.js';
+import type { InstrumentService } from './instrument.service.js';
 
 export class InstrumentController {
   constructor(private readonly instrumentService: InstrumentService) {}
@@ -17,7 +17,7 @@ export class InstrumentController {
 
     try {
       response.status(200).json({
-        ...await this.instrumentService.search(parsedQuery.data),
+        ...(await this.instrumentService.search(parsedQuery.data)),
         requestId: request.id,
       });
     } catch (error) {

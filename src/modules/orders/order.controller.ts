@@ -1,8 +1,12 @@
 import type { NextFunction, Request, Response } from 'express';
 
 import { AppError } from '../../shared/errors/AppError.js';
-import { cancelOrderParamsSchema, createOrderBodySchema, userOrderParamsSchema } from './order.schemas.js';
-import { OrderService } from './order.service.js';
+import {
+  cancelOrderParamsSchema,
+  createOrderBodySchema,
+  userOrderParamsSchema,
+} from './order.schemas.js';
+import type { OrderService } from './order.service.js';
 
 export class OrderController {
   constructor(private readonly orderService: OrderService) {}
@@ -18,7 +22,7 @@ export class OrderController {
 
     try {
       response.status(201).json({
-        ...await this.orderService.create(params.data.userId, body.data),
+        ...(await this.orderService.create(params.data.userId, body.data)),
         requestId: request.id,
       });
     } catch (error) {
@@ -36,7 +40,7 @@ export class OrderController {
 
     try {
       response.status(200).json({
-        ...await this.orderService.cancel(params.data.userId, params.data.orderId),
+        ...(await this.orderService.cancel(params.data.userId, params.data.orderId)),
         requestId: request.id,
       });
     } catch (error) {

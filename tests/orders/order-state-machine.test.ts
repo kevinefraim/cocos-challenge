@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
-import { canCancelOrder, getInitialOrderStatus } from '../../src/modules/orders/order-state-machine.js';
+import {
+  canCancelOrder,
+  getInitialOrderStatus,
+} from '../../src/modules/orders/order-state-machine.js';
 
 describe('order state machine', () => {
   it('fills a valid market order immediately', () => {

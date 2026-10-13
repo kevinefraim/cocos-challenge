@@ -41,7 +41,9 @@ describe('API end-to-end', () => {
 
   afterAll(async () => {
     if (server) {
-      await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
+      await new Promise<void>((resolve, reject) =>
+        server.close((error) => (error ? reject(error) : resolve())),
+      );
     }
 
     if (appDataSource.isInitialized) {
@@ -122,7 +124,13 @@ describe('API end-to-end', () => {
     const invalidPayload = await requestJson('/users/1/orders', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ instrumentId: 1, side: 'BUY', type: 'MARKET', quantity: 1, amount: '1.00' }),
+      body: JSON.stringify({
+        instrumentId: 1,
+        side: 'BUY',
+        type: 'MARKET',
+        quantity: 1,
+        amount: '1.00',
+      }),
     });
     expect(invalidPayload.response.status).toBe(400);
     expect(invalidPayload.body.error.code).toBe('INVALID_ORDER');
@@ -166,12 +174,23 @@ describe('API end-to-end', () => {
   it('serializes concurrent market orders for one user', async () => {
     const payload = JSON.stringify({ instrumentId: 5, side: 'BUY', type: 'MARKET', quantity: 60 });
     const [first, second] = await Promise.all([
-      requestJson('/users/1/orders', { method: 'POST', headers: { 'content-type': 'application/json' }, body: payload }),
-      requestJson('/users/1/orders', { method: 'POST', headers: { 'content-type': 'application/json' }, body: payload }),
+      requestJson('/users/1/orders', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: payload,
+      }),
+      requestJson('/users/1/orders', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: payload,
+      }),
     ]);
 
     createdOrderIds.push(first.body.order.id, second.body.order.id);
     expect([first.response.status, second.response.status]).toEqual([201, 201]);
-    expect([first.body.order.status, second.body.order.status].sort()).toEqual(['FILLED', 'REJECTED']);
+    expect([first.body.order.status, second.body.order.status].sort()).toEqual([
+      'FILLED',
+      'REJECTED',
+    ]);
   });
 });

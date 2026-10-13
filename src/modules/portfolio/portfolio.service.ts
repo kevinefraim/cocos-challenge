@@ -1,7 +1,7 @@
 import { Decimal } from 'decimal.js';
 
 import { AppError } from '../../shared/errors/AppError.js';
-import { PortfolioRepository } from './portfolio.repository.js';
+import type { PortfolioRepository } from './portfolio.repository.js';
 
 type Position = {
   instrumentId: number;
@@ -91,7 +91,9 @@ export class PortfolioService {
           position.averageCost = price;
           positions.set(order.instrumentId, position);
         } else if (position.quantity <= 0) {
-          const totalShortCost = position.averageCost.mul(Math.abs(position.quantity)).plus(notional);
+          const totalShortCost = position.averageCost
+            .mul(Math.abs(position.quantity))
+            .plus(notional);
           position.quantity = nextQuantity;
           position.averageCost = totalShortCost.div(Math.abs(nextQuantity));
           positions.set(order.instrumentId, position);
@@ -107,21 +109,31 @@ export class PortfolioService {
     }
 
     const marketData = await this.portfolioRepository.findLatestMarketData([...positions.keys()]);
-    const marketDataByInstrumentId = new Map(marketData.map((quote) => [quote.instrumentId, quote]));
+    const marketDataByInstrumentId = new Map(
+      marketData.map((quote) => [quote.instrumentId, quote]),
+    );
     let positionsMarketValue = new Decimal(0);
 
     const responsePositions = [...positions.values()].map((position) => {
       const quote = marketDataByInstrumentId.get(position.instrumentId);
 
       if (!quote) {
-        throw new AppError('MARKET_DATA_NOT_FOUND', 500, `Missing market data for ${position.ticker}`);
+        throw new AppError(
+          'MARKET_DATA_NOT_FOUND',
+          500,
+          `Missing market data for ${position.ticker}`,
+        );
       }
 
       const lastPrice = new Decimal(quote.close);
       const previousClose = new Decimal(quote.previousClose);
 
       if (position.averageCost.lessThanOrEqualTo(0)) {
-        throw new AppError('INVALID_ORDER_HISTORY', 500, `Invalid cost basis for ${position.ticker}`);
+        throw new AppError(
+          'INVALID_ORDER_HISTORY',
+          500,
+          `Invalid cost basis for ${position.ticker}`,
+        );
       }
       const marketValue = lastPrice.mul(position.quantity);
       positionsMarketValue = positionsMarketValue.plus(marketValue);
@@ -135,7 +147,10 @@ export class PortfolioService {
         lastPrice: decimalToMoney(lastPrice),
         marketValue: decimalToMoney(marketValue),
         unrealizedReturnPercent: decimalToPercent(
-          (position.quantity > 0 ? lastPrice.minus(position.averageCost) : position.averageCost.minus(lastPrice))
+          (position.quantity > 0
+            ? lastPrice.minus(position.averageCost)
+            : position.averageCost.minus(lastPrice)
+          )
             .div(position.averageCost)
             .mul(100),
         ),

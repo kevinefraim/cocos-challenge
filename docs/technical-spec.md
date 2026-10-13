@@ -8,7 +8,8 @@ This document defines how that behaviour is implemented and operated.
 - Node.js + TypeScript + Express.
 - PostgreSQL + TypeORM.
 - Zod for HTTP request validation.
-- Vitest + Supertest for automated tests.
+- Vitest for unit and real HTTP end-to-end tests.
+- ESLint + Prettier for static analysis and formatting.
 
 ## Project structure
 
@@ -80,19 +81,23 @@ Secrets are never committed; `.env.example` lists names only.
 JSON logs include `requestId`, method, path, status, duration, and safe order
 identifiers. They never include the database URL or credentials.
 
-Delivery includes a Dockerfile, public deployment, and CI that runs formatting,
-linting, type-checking, and tests. The deployed API uses the same provided
+Delivery includes a Dockerfile and CI that runs formatting, linting,
+type-checking, build, unit tests, and end-to-end coverage. Deployment is a
+separate final delivery milestone. The deployed API uses the same provided
 PostgreSQL database as local execution. Its connection URL remains deployment
 secret configuration and is never exposed through the API or logs.
 
 ## Test plan
 
 - Unit: state transitions and amount-to-quantity calculation.
-- Functional: successful market order, persisted `REJECTED` order caused by
+- End-to-end: a real Express HTTP listener and the supplied PostgreSQL database
+  exercise successful market order, persisted `REJECTED` order caused by
   insufficient cash/holdings, and cancellation of a `NEW` limit order.
 - The required functional test for placing an order is included in this suite.
-- Functional tests wrap each case in a transaction and roll it back; they never
-  leave test records in the provided database.
+- E2E tests remove their temporary orders in `afterEach`, run serially, and are
+  never pointed to an unrelated production database.
+- `npm run test:coverage` enforces at least 80% lines, functions, branches, and
+  statements across `src/` (excluding the process bootstrap in `server.ts`).
 
 ## Explicit non-goals
 
