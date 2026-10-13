@@ -6,6 +6,7 @@ import type { DataSource } from 'typeorm';
 
 import { env } from './config/env.js';
 import { createInstrumentRouter } from './modules/instruments/instrument.routes.js';
+import { createOrderRouter } from './modules/orders/order.routes.js';
 import { createPortfolioRouter } from './modules/portfolio/portfolio.routes.js';
 import { errorHandler } from './shared/middleware/error-handler.js';
 
@@ -35,6 +36,7 @@ export function createApp(dataSource: DataSource) {
   });
 
   app.use('/instruments', createInstrumentRouter(dataSource));
+  app.use('/users', createOrderRouter(dataSource));
   app.use('/users', createPortfolioRouter(dataSource));
 
   app.use(errorHandler);
