@@ -62,4 +62,25 @@ describe('POST /users/:userId/orders', () => {
     expect(response.body.order.status).toBe('REJECTED');
     expect(response.body.rejectionReason).toBe('INSUFFICIENT_CASH');
   });
+
+  it('cancels a pending limit order', async () => {
+    const creation = await request(app)
+      .post('/users/1/orders')
+      .send({
+        instrumentId: 1,
+        side: 'BUY',
+        type: 'LIMIT',
+        quantity: 1,
+        price: '1.00',
+      })
+      .expect(201);
+
+    createdOrderIds.push(creation.body.order.id);
+
+    const cancellation = await request(app)
+      .patch(`/users/1/orders/${creation.body.order.id}/cancel`)
+      .expect(200);
+
+    expect(cancellation.body.status).toBe('CANCELLED');
+  });
 });
