@@ -4,7 +4,7 @@ import type { DataSource } from 'typeorm';
 import type { Order } from '../../database/entities/Order.js';
 import { AppError } from '../../shared/errors/AppError.js';
 import { canCancelOrder, getInitialOrderStatus, type OrderStatus } from './order-state-machine.js';
-import type { CreateOrderInput } from './order.schemas.js';
+import { MAX_ORDER_SIZE, type CreateOrderInput } from './order.schemas.js';
 import { OrderRepository } from './order.repository.js';
 
 type CreateOrderResult = {
@@ -39,11 +39,19 @@ export class OrderService {
       }
 
       const effectivePrice = input.type === 'MARKET' ? new Decimal(quote.close) : new Decimal(input.price!);
-      const quantity = input.quantity ?? new Decimal(input.amount!).div(effectivePrice).floor().toNumber();
+      const derivedQuantity = input.quantity === undefined
+        ? new Decimal(input.amount!).div(effectivePrice).floor()
+        : new Decimal(input.quantity);
 
-      if (quantity < 1) {
+      if (derivedQuantity.lessThan(1)) {
         throw new AppError('AMOUNT_TOO_LOW', 400, 'Amount is too low to purchase one share');
       }
+
+      if (derivedQuantity.greaterThan(MAX_ORDER_SIZE)) {
+        throw new AppError('QUANTITY_TOO_LARGE', 400, 'Order quantity exceeds the supported limit');
+      }
+
+      const quantity = derivedQuantity.toNumber();
 
       const filledOrders = await this.orderRepository.findFilledOrders(manager, user.id);
       const hasSufficientCash = this.calculateAvailableCash(filledOrders).greaterThanOrEqualTo(effectivePrice.mul(quantity));

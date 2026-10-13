@@ -17,7 +17,10 @@ export class OrderController {
     }
 
     try {
-      response.status(201).json(await this.orderService.create(params.data.userId, body.data));
+      response.status(201).json({
+        ...await this.orderService.create(params.data.userId, body.data),
+        requestId: request.id,
+      });
     } catch (error) {
       next(error);
     }
@@ -32,7 +35,10 @@ export class OrderController {
     }
 
     try {
-      response.status(200).json(await this.orderService.cancel(params.data.userId, params.data.orderId));
+      response.status(200).json({
+        ...await this.orderService.cancel(params.data.userId, params.data.orderId),
+        requestId: request.id,
+      });
     } catch (error) {
       next(error);
     }

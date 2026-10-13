@@ -73,11 +73,14 @@ Only `FILLED` orders affect balances and positions.
 - Available ARS = filled `CASH_IN` minus `CASH_OUT`, minus filled buy notionals,
   plus filled sell notionals.
 - Position quantity = filled buys minus filled sells for each non-`MONEDA`
-  instrument. Zero positions are omitted.
+  instrument. Zero positions are omitted. Historical data may contain a net
+  short position; it is returned with a negative quantity, although new sell
+  orders remain subject to the no-short-selling validation rule.
 - Market value = quantity × latest `close`.
 - Cost basis uses moving weighted-average purchase cost. A sale reduces quantity
   at the current average cost and does not change that average.
-- `unrealizedReturnPercent` = `(latestClose - averageCost) / averageCost * 100`.
+- `unrealizedReturnPercent` = `(latestClose - averageCost) / averageCost * 100`
+  for long positions, reversing the subtraction for short positions.
 - `dailyReturnPercent` = `(latestClose - previousClose) / previousClose * 100`.
   It is provided because the original challenge explicitly supplies
   `previousClose` for this calculation.

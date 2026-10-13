@@ -11,6 +11,7 @@ import { createInstrumentRouter } from './modules/instruments/instrument.routes.
 import { createOrderRouter } from './modules/orders/order.routes.js';
 import { createPortfolioRouter } from './modules/portfolio/portfolio.routes.js';
 import { errorHandler } from './shared/middleware/error-handler.js';
+import { notFoundHandler } from './shared/middleware/not-found.js';
 
 const logger = pino({ level: env.LOG_LEVEL });
 
@@ -24,8 +25,8 @@ export function createApp(dataSource: DataSource) {
     next();
   });
 
-  app.get('/health', (_request, response) => {
-    response.status(200).json({ status: 'ok' });
+  app.get('/health', (request, response) => {
+    response.status(200).json({ status: 'ok', requestId: request.id });
   });
 
   app.get('/openapi.json', (_request, response) => {
@@ -34,10 +35,10 @@ export function createApp(dataSource: DataSource) {
 
   app.use('/docs', swaggerUi.serve, swaggerUi.setup(openApiDocument));
 
-  app.get('/ready', async (_request, response, next) => {
+  app.get('/ready', async (request, response, next) => {
     try {
       await dataSource.query('SELECT 1');
-      response.status(200).json({ status: 'ready' });
+      response.status(200).json({ status: 'ready', requestId: request.id });
     } catch (error) {
       next(error);
     }
@@ -47,6 +48,7 @@ export function createApp(dataSource: DataSource) {
   app.use('/users', createOrderRouter(dataSource));
   app.use('/users', createPortfolioRouter(dataSource));
 
+  app.use(notFoundHandler);
   app.use(errorHandler);
 
   return app;

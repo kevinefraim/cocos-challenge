@@ -55,24 +55,55 @@ export class PortfolioService {
       };
 
       if (order.side === 'BUY') {
-        const totalCost = position.averageCost.mul(position.quantity).plus(notional);
-        position.quantity += order.size;
-        position.averageCost = totalCost.div(position.quantity);
         availableCash = availableCash.minus(notional);
-        positions.set(order.instrumentId, position);
+
+        if (position.quantity < 0) {
+          const nextQuantity = position.quantity + order.size;
+
+          if (nextQuantity === 0) {
+            positions.delete(order.instrumentId);
+          } else if (nextQuantity > 0) {
+            position.quantity = nextQuantity;
+            position.averageCost = price;
+            positions.set(order.instrumentId, position);
+          } else {
+            position.quantity = nextQuantity;
+            positions.set(order.instrumentId, position);
+          }
+        } else {
+          const totalCost = position.averageCost.mul(position.quantity).plus(notional);
+          position.quantity += order.size;
+          position.averageCost = totalCost.div(position.quantity);
+          positions.set(order.instrumentId, position);
+        }
+
         continue;
       }
 
       if (order.side === 'SELL') {
-        position.quantity -= order.size;
         availableCash = availableCash.plus(notional);
+        const nextQuantity = position.quantity - order.size;
 
-        if (position.quantity === 0) {
+        if (nextQuantity === 0) {
           positions.delete(order.instrumentId);
+        } else if (position.quantity > 0 && nextQuantity < 0) {
+          position.quantity = nextQuantity;
+          position.averageCost = price;
+          positions.set(order.instrumentId, position);
+        } else if (position.quantity <= 0) {
+          const totalShortCost = position.averageCost.mul(Math.abs(position.quantity)).plus(notional);
+          position.quantity = nextQuantity;
+          position.averageCost = totalShortCost.div(Math.abs(nextQuantity));
+          positions.set(order.instrumentId, position);
         } else {
+          position.quantity = nextQuantity;
           positions.set(order.instrumentId, position);
         }
+
+        continue;
       }
+
+      throw new AppError('INVALID_ORDER_HISTORY', 500, `Unsupported order side ${order.side}`);
     }
 
     const marketData = await this.portfolioRepository.findLatestMarketData([...positions.keys()]);
@@ -88,6 +119,10 @@ export class PortfolioService {
 
       const lastPrice = new Decimal(quote.close);
       const previousClose = new Decimal(quote.previousClose);
+
+      if (position.averageCost.lessThanOrEqualTo(0)) {
+        throw new AppError('INVALID_ORDER_HISTORY', 500, `Invalid cost basis for ${position.ticker}`);
+      }
       const marketValue = lastPrice.mul(position.quantity);
       positionsMarketValue = positionsMarketValue.plus(marketValue);
 
@@ -99,7 +134,11 @@ export class PortfolioService {
         averageCost: decimalToMoney(position.averageCost),
         lastPrice: decimalToMoney(lastPrice),
         marketValue: decimalToMoney(marketValue),
-        unrealizedReturnPercent: decimalToPercent(lastPrice.minus(position.averageCost).div(position.averageCost).mul(100)),
+        unrealizedReturnPercent: decimalToPercent(
+          (position.quantity > 0 ? lastPrice.minus(position.averageCost) : position.averageCost.minus(lastPrice))
+            .div(position.averageCost)
+            .mul(100),
+        ),
         dailyReturnPercent: previousClose.isZero()
           ? null
           : decimalToPercent(lastPrice.minus(previousClose).div(previousClose).mul(100)),

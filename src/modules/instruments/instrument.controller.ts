@@ -16,7 +16,10 @@ export class InstrumentController {
     }
 
     try {
-      response.status(200).json(await this.instrumentService.search(parsedQuery.data));
+      response.status(200).json({
+        ...await this.instrumentService.search(parsedQuery.data),
+        requestId: request.id,
+      });
     } catch (error) {
       next(error);
     }

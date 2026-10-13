@@ -18,7 +18,10 @@ export class PortfolioController {
     }
 
     try {
-      response.status(200).json(await this.portfolioService.getPortfolio(parsedParams.data.userId));
+      response.status(200).json({
+        ...await this.portfolioService.getPortfolio(parsedParams.data.userId),
+        requestId: request.id,
+      });
     } catch (error) {
       next(error);
     }
