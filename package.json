@@ -10,7 +10,8 @@
     "start": "node dist/server.js",
     "typecheck": "tsc --noEmit",
     "test": "vitest run --exclude tests/**/*.integration.test.ts",
-    "test:integration": "vitest run tests/orders/create-order.integration.test.ts tests/read-api.integration.test.ts --maxWorkers=1"
+    "test:integration": "vitest run tests/orders/create-order.integration.test.ts tests/read-api.integration.test.ts --maxWorkers=1",
+    "test:e2e": "vitest run tests/api.e2e.test.ts --maxWorkers=1"
   },
   "dependencies": {
     "decimal.js": "^10.6.0",
