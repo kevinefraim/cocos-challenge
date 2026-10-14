@@ -12,6 +12,10 @@ jobs:
   quality:
     name: Quality
     runs-on: ubuntu-latest
+    env:
+      # Unit tests validate the HTTP layer and do not connect to PostgreSQL.
+      DATABASE_URL: postgresql://test:test@localhost:5432/cocos_test
+      LOG_LEVEL: fatal
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
