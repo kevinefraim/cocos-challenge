@@ -1,0 +1,108 @@
+{
+  "info": {
+    "_postman_id": "bc0cf055-fb44-4eee-9a01-5b877ee4bc7b",
+    "name": "Cocos Backend Challenge",
+    "description": "HTTP collection for the Cocos backend challenge. Set baseUrl and userId for the target environment.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3000" },
+    { "key": "userId", "value": "1" },
+    { "key": "orderId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Operational",
+      "item": [
+        {
+          "name": "Health",
+          "request": { "method": "GET", "url": "{{baseUrl}}/health" }
+        },
+        {
+          "name": "Readiness",
+          "request": { "method": "GET", "url": "{{baseUrl}}/ready" }
+        },
+        {
+          "name": "OpenAPI document",
+          "request": { "method": "GET", "url": "{{baseUrl}}/openapi.json" }
+        }
+      ]
+    },
+    {
+      "name": "Instruments and portfolio",
+      "item": [
+        {
+          "name": "Search instruments",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/instruments?q=gas&page=1&pageSize=20"
+          }
+        },
+        {
+          "name": "Get portfolio",
+          "request": { "method": "GET", "url": "{{baseUrl}}/users/{{userId}}/portfolio" }
+        }
+      ]
+    },
+    {
+      "name": "Orders",
+      "item": [
+        {
+          "name": "Create market order by quantity",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"instrumentId\": 1,\n  \"side\": \"BUY\",\n  \"type\": \"MARKET\",\n  \"quantity\": 1\n}"
+            },
+            "url": "{{baseUrl}}/users/{{userId}}/orders"
+          }
+        },
+        {
+          "name": "Create limit order and save ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const body = pm.response.json();",
+                  "pm.expect(pm.response.code).to.equal(201);",
+                  "pm.collectionVariables.set('orderId', body.order.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"instrumentId\": 1,\n  \"side\": \"BUY\",\n  \"type\": \"LIMIT\",\n  \"quantity\": 1,\n  \"price\": \"1.00\"\n}"
+            },
+            "url": "{{baseUrl}}/users/{{userId}}/orders"
+          }
+        },
+        {
+          "name": "Cancel saved limit order",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/users/{{userId}}/orders/{{orderId}}/cancel"
+          }
+        },
+        {
+          "name": "Reject insufficient holdings",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"instrumentId\": 47,\n  \"side\": \"SELL\",\n  \"type\": \"MARKET\",\n  \"quantity\": 999999\n}"
+            },
+            "url": "{{baseUrl}}/users/{{userId}}/orders"
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -4,6 +4,9 @@
   "private": true,
   "type": "module",
   "description": "Backend challenge for Cocos",
+  "engines": {
+    "node": ">=24 <25"
+  },
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "build": "tsc -p tsconfig.json",
@@ -16,7 +19,9 @@
     "test": "vitest run --exclude tests/**/*.e2e.test.ts",
     "test:integration": "npm run test:e2e",
     "test:e2e": "vitest run tests/api.e2e.test.ts --maxWorkers=1",
-    "test:coverage": "vitest run --coverage --maxWorkers=1"
+    "test:coverage": "vitest run --coverage --maxWorkers=1",
+    "docker:up": "docker compose up --build",
+    "docker:down": "docker compose down"
   },
   "dependencies": {
     "decimal.js": "^10.6.0",

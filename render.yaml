@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: cocos-backend-challenge
+    runtime: docker
+    plan: free
+    region: oregon
+    branch: master
+    autoDeployTrigger: checksPass
+    healthCheckPath: /ready
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: LOG_LEVEL
+        value: info
+      - key: DATABASE_URL
+        sync: false

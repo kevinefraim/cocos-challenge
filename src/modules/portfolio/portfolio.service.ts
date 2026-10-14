@@ -1,6 +1,6 @@
 import { Decimal } from 'decimal.js';
 
-import { AppError } from '../../shared/errors/AppError.js';
+import { createAppError } from '../../shared/errors/error-catalog.js';
 import type { PortfolioRepository } from './portfolio.repository.js';
 
 type Position = {
@@ -21,7 +21,7 @@ export class PortfolioService {
     const user = await this.portfolioRepository.findUser(userId);
 
     if (!user) {
-      throw new AppError('USER_NOT_FOUND', 404, 'User not found');
+      throw createAppError('USER_NOT_FOUND');
     }
 
     const orders = await this.portfolioRepository.findFilledOrders(userId);
@@ -105,7 +105,9 @@ export class PortfolioService {
         continue;
       }
 
-      throw new AppError('INVALID_ORDER_HISTORY', 500, `Unsupported order side ${order.side}`);
+      throw createAppError('INVALID_ORDER_HISTORY', {
+        message: `Unsupported order side ${order.side}`,
+      });
     }
 
     const marketData = await this.portfolioRepository.findLatestMarketData([...positions.keys()]);
@@ -118,11 +120,9 @@ export class PortfolioService {
       const quote = marketDataByInstrumentId.get(position.instrumentId);
 
       if (!quote) {
-        throw new AppError(
-          'MARKET_DATA_UNAVAILABLE',
-          503,
-          `Missing market data for ${position.ticker}`,
-        );
+        throw createAppError('MARKET_DATA_UNAVAILABLE', {
+          message: `Missing market data for ${position.ticker}`,
+        });
       }
 
       const lastPrice = this.parseQuoteValue(quote.close, position.ticker, 'close', false);
@@ -134,11 +134,9 @@ export class PortfolioService {
       );
 
       if (position.averageCost.lessThanOrEqualTo(0)) {
-        throw new AppError(
-          'INVALID_ORDER_HISTORY',
-          500,
-          `Invalid cost basis for ${position.ticker}`,
-        );
+        throw createAppError('INVALID_ORDER_HISTORY', {
+          message: `Invalid cost basis for ${position.ticker}`,
+        });
       }
       const marketValue = lastPrice.mul(position.quantity);
       positionsMarketValue = positionsMarketValue.plus(marketValue);
@@ -176,20 +174,16 @@ export class PortfolioService {
 
   private parseQuoteValue(value: string | null, ticker: string, field: string, allowZero: boolean) {
     if (value === null) {
-      throw new AppError(
-        'MARKET_DATA_UNAVAILABLE',
-        503,
-        `Invalid ${field} market data for ${ticker}`,
-      );
+      throw createAppError('MARKET_DATA_UNAVAILABLE', {
+        message: `Invalid ${field} market data for ${ticker}`,
+      });
     }
 
     const decimal = new Decimal(value);
     if (!decimal.isFinite() || decimal.isNegative() || (!allowZero && decimal.isZero())) {
-      throw new AppError(
-        'MARKET_DATA_UNAVAILABLE',
-        503,
-        `Invalid ${field} market data for ${ticker}`,
-      );
+      throw createAppError('MARKET_DATA_UNAVAILABLE', {
+        message: `Invalid ${field} market data for ${ticker}`,
+      });
     }
 
     return decimal;

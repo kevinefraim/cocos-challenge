@@ -1,18 +1,20 @@
 import type { ErrorRequestHandler } from 'express';
 
 import { AppError } from '../errors/AppError.js';
+import { createAppError } from '../errors/error-catalog.js';
+import { HTTP_STATUS } from '../http/constants.js';
 
 export const errorHandler: ErrorRequestHandler = (error, request, response, _next) => {
   const appError =
     error instanceof AppError
       ? error
       : error instanceof SyntaxError && 'body' in error
-        ? new AppError('INVALID_JSON', 400, 'Malformed JSON request body')
+        ? createAppError('INVALID_JSON')
         : typeof error === 'object' && error !== null && 'status' in error && error.status === 413
-          ? new AppError('PAYLOAD_TOO_LARGE', 413, 'Request body exceeds the allowed size')
-          : new AppError('INTERNAL_ERROR', 500, 'An unexpected error occurred');
+          ? createAppError('PAYLOAD_TOO_LARGE')
+          : createAppError('INTERNAL_ERROR');
 
-  if (appError.statusCode >= 500) {
+  if (appError.statusCode >= HTTP_STATUS.INTERNAL_SERVER_ERROR) {
     request.log.error({ err: error, requestId: request.id }, 'Unhandled request error');
   }
 

@@ -5,7 +5,7 @@ This document defines how that behaviour is implemented and operated.
 
 ## Stack
 
-- Node.js + TypeScript + Express.
+- Node.js 24 + TypeScript targeting ES2024 + Express.
 - PostgreSQL + TypeORM.
 - Zod for HTTP request validation.
 - Vitest for unit and real HTTP end-to-end tests.
@@ -72,6 +72,9 @@ type and validation; the only later transition is `NEW -> CANCELLED`.
 ## HTTP and runtime behaviour
 
 - JSON responses include a generated or propagated `requestId`.
+- `x-request-id`, JSON body limit, HTTP statuses, and reusable error definitions
+  are centralized as shared transport-contract constants. Business-specific
+  diagnostic context stays in the owning service.
 - `GET /health` checks process liveness; `GET /ready` also verifies PostgreSQL
   connectivity and returns `503` when unavailable.
 - Error middleware serializes the functional error contract and prevents stack
@@ -87,11 +90,13 @@ Secrets are never committed; `.env.example` lists names only.
 JSON logs include `requestId`, method, path, status, duration, and safe order
 identifiers. They never include the database URL or credentials.
 
-Delivery includes a Dockerfile and CI that runs formatting, linting,
-type-checking, build, unit tests, and end-to-end coverage. Deployment is a
-separate final delivery milestone. The deployed API uses the same provided
-PostgreSQL database as local execution. Its connection URL remains deployment
-secret configuration and is never exposed through the API or logs.
+Delivery includes a non-root Docker image with a health check, Compose for
+local execution, and CI that runs formatting, linting, type-checking, build,
+runtime-import smoke testing, Docker image build, unit tests, and end-to-end
+coverage. Render's Docker Blueprint deploys `master` after CI checks pass. The
+deployed API uses the same provided PostgreSQL database as local execution. Its
+connection URL remains deployment-secret configuration and is never exposed
+through the API or logs.
 
 ## Test plan
 

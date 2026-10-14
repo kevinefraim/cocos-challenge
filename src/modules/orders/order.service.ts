@@ -2,7 +2,8 @@ import { Decimal } from 'decimal.js';
 import type { DataSource } from 'typeorm';
 
 import type { Order } from '../../database/entities/Order.js';
-import { AppError } from '../../shared/errors/AppError.js';
+import { createAppError } from '../../shared/errors/error-catalog.js';
+import { HTTP_STATUS } from '../../shared/http/constants.js';
 import { canCancelOrder, getInitialOrderStatus, type OrderStatus } from './order-state-machine.js';
 import { MAX_ORDER_SIZE, type CreateOrderInput } from './order.schemas.js';
 import type { OrderRepository } from './order.repository.js';
@@ -23,13 +24,13 @@ export class OrderService {
       const user = await this.orderRepository.findUserForUpdate(manager, userId);
 
       if (!user) {
-        throw new AppError('USER_NOT_FOUND', 404, 'User not found');
+        throw createAppError('USER_NOT_FOUND');
       }
 
       const instrument = await this.orderRepository.findInstrument(manager, input.instrumentId);
 
       if (!instrument || instrument.type === 'MONEDA') {
-        throw new AppError('INSTRUMENT_NOT_FOUND', 404, 'Tradable instrument not found');
+        throw createAppError('INSTRUMENT_NOT_FOUND');
       }
 
       const effectivePrice =
@@ -44,11 +45,11 @@ export class OrderService {
           : new Decimal(input.quantity);
 
       if (derivedQuantity.lessThan(1)) {
-        throw new AppError('AMOUNT_TOO_LOW', 400, 'Amount is too low to purchase one share');
+        throw createAppError('AMOUNT_TOO_LOW');
       }
 
       if (derivedQuantity.greaterThan(MAX_ORDER_SIZE)) {
-        throw new AppError('QUANTITY_TOO_LARGE', 400, 'Order quantity exceeds the supported limit');
+        throw createAppError('QUANTITY_TOO_LARGE');
       }
 
       const quantity = derivedQuantity.toNumber();
@@ -89,11 +90,11 @@ export class OrderService {
       const order = await this.orderRepository.findOrderForUpdate(manager, userId, orderId);
 
       if (!order) {
-        throw new AppError('ORDER_NOT_FOUND', 404, 'Order not found');
+        throw createAppError('ORDER_NOT_FOUND');
       }
 
       if (!canCancelOrder(order.status as OrderStatus)) {
-        throw new AppError('ORDER_NOT_CANCELLABLE', 409, 'Only NEW orders can be cancelled');
+        throw createAppError('ORDER_NOT_CANCELLABLE');
       }
 
       order.status = 'CANCELLED';
@@ -116,21 +117,19 @@ export class OrderService {
 
   private getMarketPrice(quote: { close: string | null } | null) {
     if (!quote || quote.close === null) {
-      throw new AppError(
-        'MARKET_DATA_UNAVAILABLE',
-        409,
-        'No current market price is available for this instrument',
-      );
+      throw createAppError('MARKET_DATA_UNAVAILABLE', {
+        statusCode: HTTP_STATUS.CONFLICT,
+        message: 'No current market price is available for this instrument',
+      });
     }
 
     const price = new Decimal(quote.close).toDecimalPlaces(2, Decimal.ROUND_HALF_UP);
 
     if (!price.isFinite() || price.lessThanOrEqualTo(0)) {
-      throw new AppError(
-        'MARKET_DATA_UNAVAILABLE',
-        409,
-        'The current market price is invalid for this instrument',
-      );
+      throw createAppError('MARKET_DATA_UNAVAILABLE', {
+        statusCode: HTTP_STATUS.CONFLICT,
+        message: 'The current market price is invalid for this instrument',
+      });
     }
 
     return price;

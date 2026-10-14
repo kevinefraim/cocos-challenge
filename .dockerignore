@@ -1,6 +1,11 @@
 node_modules
 dist
-.env
-.git
 coverage
-
+.env
+.env.*
+!.env.example
+.git
+.github
+docs
+tests
+postman

@@ -25,6 +25,8 @@ jobs:
       - run: npm run build
       - run: npm run smoke:runtime
       - run: npm test
+      - name: Build Docker image
+        run: docker build --tag cocos-backend-challenge:${{ github.sha }} .
 
   end-to-end:
     name: E2E and coverage
