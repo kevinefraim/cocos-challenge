@@ -42,12 +42,3 @@ jobs:
       - name: Require E2E database secret
         run: test -n "$DATABASE_URL"
       - run: npm run test:coverage
-      - name: Publish coverage summary
-        run: node .github/scripts/coverage-summary.mjs >> "$GITHUB_STEP_SUMMARY"
-      - name: Upload coverage report
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-report
-          path: coverage/
-          if-no-files-found: error
-          retention-days: 14

@@ -67,11 +67,9 @@ at an unrelated production database.
 ## CI
 
 GitHub Actions runs formatting, linting, type checking, build, and unit tests
-on every pull request and push to `main`. It then runs the E2E suite and the
+on every pull request and push to `master`. It then runs the E2E suite and the
 80% coverage gate using the repository secret `DATABASE_URL_E2E`. Configure it
 with the same challenge PostgreSQL URL used locally; never commit that URL.
-The E2E job also publishes the aggregate percentages in its GitHub Actions
-summary and a downloadable `coverage-report` HTML artifact.
 
 ## Docker
 
