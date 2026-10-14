@@ -1,14 +1,18 @@
 import type { Server } from 'node:http';
+import { randomUUID } from 'node:crypto';
 
-import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import { createApp } from '../src/app.js';
 import { appDataSource } from '../src/database/data-source.js';
+import { Instrument } from '../src/database/entities/Instrument.js';
 import { Order } from '../src/database/entities/Order.js';
+import { User } from '../src/database/entities/User.js';
 
 let server: Server;
 let baseUrl: string;
-const createdOrderIds: number[] = [];
+let testUserId: number;
+let cashInstrumentId: number;
 
 async function requestJson(path: string, init?: RequestInit) {
   const response = await fetch(`${baseUrl}${path}`, init);
@@ -18,6 +22,17 @@ async function requestJson(path: string, init?: RequestInit) {
 describe('API end-to-end', () => {
   beforeAll(async () => {
     await appDataSource.initialize();
+    const user = await appDataSource.getRepository(User).save({
+      email: `e2e-${randomUUID()}@example.test`,
+      accountNumber: `E2E-${randomUUID().slice(0, 12)}`,
+    });
+    testUserId = user.id;
+
+    const cashInstrument = await appDataSource
+      .getRepository(Instrument)
+      .findOneByOrFail({ type: 'MONEDA' });
+    cashInstrumentId = cashInstrument.id;
+
     const app = createApp(appDataSource);
 
     await new Promise<void>((resolve, reject) => {
@@ -33,10 +48,21 @@ describe('API end-to-end', () => {
     baseUrl = `http://127.0.0.1:${address.port}`;
   });
 
+  beforeEach(async () => {
+    await appDataSource.getRepository(Order).save({
+      instrumentId: cashInstrumentId,
+      userId: testUserId,
+      size: 1_000_000,
+      price: '1.00',
+      side: 'CASH_IN',
+      status: 'FILLED',
+      type: 'MARKET',
+      datetime: new Date(),
+    });
+  });
+
   afterEach(async () => {
-    if (createdOrderIds.length > 0) {
-      await appDataSource.getRepository(Order).delete(createdOrderIds.splice(0));
-    }
+    await appDataSource.getRepository(Order).delete({ userId: testUserId });
   });
 
   afterAll(async () => {
@@ -47,6 +73,8 @@ describe('API end-to-end', () => {
     }
 
     if (appDataSource.isInitialized) {
+      await appDataSource.getRepository(Order).delete({ userId: testUserId });
+      await appDataSource.getRepository(User).delete(testUserId);
       await appDataSource.destroy();
     }
   });
@@ -70,14 +98,14 @@ describe('API end-to-end', () => {
     expect(instruments.body.data.length).toBeGreaterThan(0);
     expect(instruments.body.requestId).toEqual(expect.any(String));
 
-    const portfolio = await requestJson('/users/1/portfolio');
+    const portfolio = await requestJson(`/users/${testUserId}/portfolio`);
     expect(portfolio.response.status).toBe(200);
-    expect(portfolio.body).toMatchObject({ userId: 1, currency: 'ARS' });
+    expect(portfolio.body).toMatchObject({ userId: testUserId, currency: 'ARS' });
     expect(portfolio.body.requestId).toEqual(expect.any(String));
   });
 
   it('creates and cancels a limit order over a real HTTP socket', async () => {
-    const creation = await requestJson('/users/1/orders', {
+    const creation = await requestJson(`/users/${testUserId}/orders`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
@@ -91,11 +119,12 @@ describe('API end-to-end', () => {
 
     expect(creation.response.status).toBe(201);
     expect(creation.body.order.status).toBe('NEW');
-    createdOrderIds.push(creation.body.order.id);
-
-    const cancellation = await requestJson(`/users/1/orders/${creation.body.order.id}/cancel`, {
-      method: 'PATCH',
-    });
+    const cancellation = await requestJson(
+      `/users/${testUserId}/orders/${creation.body.order.id}/cancel`,
+      {
+        method: 'PATCH',
+      },
+    );
 
     expect(cancellation.response.status).toBe(200);
     expect(cancellation.body.status).toBe('CANCELLED');
@@ -103,25 +132,21 @@ describe('API end-to-end', () => {
   });
 
   it('handles order outcomes, input limits, and invalid resources', async () => {
-    const buy = await requestJson('/users/1/orders', {
+    const buy = await requestJson(`/users/${testUserId}/orders`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ instrumentId: 1, side: 'BUY', type: 'MARKET', amount: '1000.00' }),
     });
     expect(buy.response.status).toBe(201);
     expect(buy.body.order.status).toBe('FILLED');
-    createdOrderIds.push(buy.body.order.id);
-
-    const rejectedSale = await requestJson('/users/1/orders', {
+    const rejectedSale = await requestJson(`/users/${testUserId}/orders`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ instrumentId: 47, side: 'SELL', type: 'MARKET', quantity: 999999 }),
     });
     expect(rejectedSale.response.status).toBe(201);
     expect(rejectedSale.body).toMatchObject({ rejectionReason: 'INSUFFICIENT_HOLDINGS' });
-    createdOrderIds.push(rejectedSale.body.order.id);
-
-    const invalidPayload = await requestJson('/users/1/orders', {
+    const invalidPayload = await requestJson(`/users/${testUserId}/orders`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
@@ -135,14 +160,14 @@ describe('API end-to-end', () => {
     expect(invalidPayload.response.status).toBe(400);
     expect(invalidPayload.body.error.code).toBe('INVALID_ORDER');
 
-    const oversizedQuantity = await requestJson('/users/1/orders', {
+    const oversizedQuantity = await requestJson(`/users/${testUserId}/orders`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ instrumentId: 1, side: 'BUY', type: 'MARKET', quantity: 2147483648 }),
     });
     expect(oversizedQuantity.response.status).toBe(400);
 
-    const unknownInstrument = await requestJson('/users/1/orders', {
+    const unknownInstrument = await requestJson(`/users/${testUserId}/orders`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ instrumentId: 999999, side: 'BUY', type: 'MARKET', quantity: 1 }),
@@ -151,7 +176,7 @@ describe('API end-to-end', () => {
   });
 
   it('returns JSON errors for malformed JSON, unknown routes, and bounded searches', async () => {
-    const malformed = await requestJson('/users/1/orders', {
+    const malformed = await requestJson(`/users/${testUserId}/orders`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: '{not valid json',
@@ -163,7 +188,10 @@ describe('API end-to-end', () => {
     expect(missing.response.status).toBe(404);
     expect(missing.body.error.code).toBe('NOT_FOUND');
 
-    const wildcardSearch = await requestJson('/instruments?q=%25&page=1&pageSize=20');
+    const shortSearch = await requestJson('/instruments?q=a&page=1&pageSize=20');
+    expect(shortSearch.response.status).toBe(400);
+
+    const wildcardSearch = await requestJson('/instruments?q=%25%25&page=1&pageSize=20');
     expect(wildcardSearch.response.status).toBe(200);
     expect(wildcardSearch.body.pagination.total).toBe(0);
 
@@ -174,19 +202,18 @@ describe('API end-to-end', () => {
   it('serializes concurrent market orders for one user', async () => {
     const payload = JSON.stringify({ instrumentId: 5, side: 'BUY', type: 'MARKET', quantity: 60 });
     const [first, second] = await Promise.all([
-      requestJson('/users/1/orders', {
+      requestJson(`/users/${testUserId}/orders`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: payload,
       }),
-      requestJson('/users/1/orders', {
+      requestJson(`/users/${testUserId}/orders`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: payload,
       }),
     ]);
 
-    createdOrderIds.push(first.body.order.id, second.body.order.id);
     expect([first.response.status, second.response.status]).toEqual([201, 201]);
     expect([first.body.order.status, second.body.order.status].sort()).toEqual([
       'FILLED',

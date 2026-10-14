@@ -91,11 +91,40 @@ describe('PortfolioService', () => {
     ]);
   });
 
-  it('fails loudly when an open position lacks market data', async () => {
+  it('returns a controlled service error when an open position lacks market data', async () => {
     await expect(
       serviceFor([order(1, 'BUY', 1, '100')], []).getPortfolio(user.id),
     ).rejects.toMatchObject({
-      code: 'MARKET_DATA_NOT_FOUND',
+      code: 'MARKET_DATA_UNAVAILABLE',
+      statusCode: 503,
     });
+  });
+
+  it('returns a controlled service error for invalid quote values', async () => {
+    await expect(
+      serviceFor(
+        [order(1, 'BUY', 1, '100')],
+        [{ instrumentId: 10, close: null, previousClose: '90' } as MarketData],
+      ).getPortfolio(user.id),
+    ).rejects.toMatchObject({
+      code: 'MARKET_DATA_UNAVAILABLE',
+      statusCode: 503,
+    });
+  });
+
+  it('returns a controlled service error for a negative or missing previous close', async () => {
+    await expect(
+      serviceFor(
+        [order(1, 'BUY', 1, '100')],
+        [{ instrumentId: 10, close: '-1', previousClose: '90' } as MarketData],
+      ).getPortfolio(user.id),
+    ).rejects.toMatchObject({ code: 'MARKET_DATA_UNAVAILABLE', statusCode: 503 });
+
+    await expect(
+      serviceFor(
+        [order(1, 'BUY', 1, '100')],
+        [{ instrumentId: 10, close: '100', previousClose: null } as MarketData],
+      ).getPortfolio(user.id),
+    ).rejects.toMatchObject({ code: 'MARKET_DATA_UNAVAILABLE', statusCode: 503 });
   });
 });

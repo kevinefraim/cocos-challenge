@@ -10,6 +10,7 @@ import { openApiDocument } from './docs/openapi.js';
 import { createInstrumentRouter } from './modules/instruments/instrument.routes.js';
 import { createOrderRouter } from './modules/orders/order.routes.js';
 import { createPortfolioRouter } from './modules/portfolio/portfolio.routes.js';
+import { AppError } from './shared/errors/AppError.js';
 import { errorHandler } from './shared/middleware/error-handler.js';
 import { notFoundHandler } from './shared/middleware/not-found.js';
 
@@ -44,8 +45,8 @@ export function createApp(dataSource: DataSource) {
     try {
       await dataSource.query('SELECT 1');
       response.status(200).json({ status: 'ready', requestId: request.id });
-    } catch (error) {
-      next(error);
+    } catch {
+      next(new AppError('DATABASE_UNAVAILABLE', 503, 'Database is unavailable'));
     }
   });
 

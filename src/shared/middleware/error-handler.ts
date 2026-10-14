@@ -8,7 +8,9 @@ export const errorHandler: ErrorRequestHandler = (error, request, response, _nex
       ? error
       : error instanceof SyntaxError && 'body' in error
         ? new AppError('INVALID_JSON', 400, 'Malformed JSON request body')
-        : new AppError('INTERNAL_ERROR', 500, 'An unexpected error occurred');
+        : typeof error === 'object' && error !== null && 'status' in error && error.status === 413
+          ? new AppError('PAYLOAD_TOO_LARGE', 413, 'Request body exceeds the allowed size')
+          : new AppError('INTERNAL_ERROR', 500, 'An unexpected error occurred');
 
   if (appError.statusCode >= 500) {
     request.log.error({ err: error, requestId: request.id }, 'Unhandled request error');

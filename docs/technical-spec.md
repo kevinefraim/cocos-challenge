@@ -43,6 +43,12 @@ access. No generic repositories, event bus, CQRS, or microservices are used.
   schema change requires an explicit reviewed migration.
 - Portfolio queries may use QueryBuilder or parameterized SQL where aggregate
   calculations are clearer than entity loading.
+- The supplied challenge schema is intentionally not modified. Portfolio
+  reconstruction is therefore linear in a user's filled-order history and is
+  proportionate for this exercise. A production migration would add indexes on
+  `orders (userid, status, datetime)`, `marketdata (instrumentid, date DESC)`,
+  and a trigram/search index for instrument lookup; sustained high-volume reads
+  would use a position projection or snapshot rather than replaying all orders.
 - The order service runs validation and insertion in one transaction. It locks
   the parent `users` row (`SELECT ... FOR UPDATE`) before calculating available
   cash/holdings, serializing writes for that user even when no prior orders

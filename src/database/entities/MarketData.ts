@@ -25,10 +25,10 @@ export class MarketData {
   open!: string | null;
 
   @Column({ type: 'numeric', transformer: decimalTransformer })
-  close!: string;
+  close!: string | null;
 
   @Column({ name: 'previousclose', type: 'numeric', transformer: decimalTransformer })
-  previousClose!: string;
+  previousClose!: string | null;
 
   @Column({ type: 'date' })
   date!: string;

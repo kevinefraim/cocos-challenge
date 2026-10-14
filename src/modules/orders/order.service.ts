@@ -32,18 +32,12 @@ export class OrderService {
         throw new AppError('INSTRUMENT_NOT_FOUND', 404, 'Tradable instrument not found');
       }
 
-      const quote = await this.orderRepository.findLatestMarketData(manager, instrument.id);
-
-      if (!quote) {
-        throw new AppError(
-          'MARKET_DATA_NOT_FOUND',
-          409,
-          'No current market price is available for this instrument',
-        );
-      }
-
       const effectivePrice =
-        input.type === 'MARKET' ? new Decimal(quote.close) : new Decimal(input.price!);
+        input.type === 'MARKET'
+          ? this.getMarketPrice(
+              await this.orderRepository.findLatestMarketData(manager, instrument.id),
+            )
+          : new Decimal(input.price!);
       const derivedQuantity =
         input.quantity === undefined
           ? new Decimal(input.amount!).div(effectivePrice).floor()
@@ -118,6 +112,28 @@ export class OrderService {
 
       return cash;
     }, new Decimal(0));
+  }
+
+  private getMarketPrice(quote: { close: string | null } | null) {
+    if (!quote || quote.close === null) {
+      throw new AppError(
+        'MARKET_DATA_UNAVAILABLE',
+        409,
+        'No current market price is available for this instrument',
+      );
+    }
+
+    const price = new Decimal(quote.close).toDecimalPlaces(2, Decimal.ROUND_HALF_UP);
+
+    if (!price.isFinite() || price.lessThanOrEqualTo(0)) {
+      throw new AppError(
+        'MARKET_DATA_UNAVAILABLE',
+        409,
+        'The current market price is invalid for this instrument',
+      );
+    }
+
+    return price;
   }
 
   private calculateHolding(orders: Order[], instrumentId: number) {

@@ -119,14 +119,19 @@ export class PortfolioService {
 
       if (!quote) {
         throw new AppError(
-          'MARKET_DATA_NOT_FOUND',
-          500,
+          'MARKET_DATA_UNAVAILABLE',
+          503,
           `Missing market data for ${position.ticker}`,
         );
       }
 
-      const lastPrice = new Decimal(quote.close);
-      const previousClose = new Decimal(quote.previousClose);
+      const lastPrice = this.parseQuoteValue(quote.close, position.ticker, 'close', false);
+      const previousClose = this.parseQuoteValue(
+        quote.previousClose,
+        position.ticker,
+        'previous close',
+        true,
+      );
 
       if (position.averageCost.lessThanOrEqualTo(0)) {
         throw new AppError(
@@ -167,5 +172,26 @@ export class PortfolioService {
       accountTotal: decimalToMoney(availableCash.plus(positionsMarketValue)),
       positions: responsePositions,
     };
+  }
+
+  private parseQuoteValue(value: string | null, ticker: string, field: string, allowZero: boolean) {
+    if (value === null) {
+      throw new AppError(
+        'MARKET_DATA_UNAVAILABLE',
+        503,
+        `Invalid ${field} market data for ${ticker}`,
+      );
+    }
+
+    const decimal = new Decimal(value);
+    if (!decimal.isFinite() || decimal.isNegative() || (!allowZero && decimal.isZero())) {
+      throw new AppError(
+        'MARKET_DATA_UNAVAILABLE',
+        503,
+        `Invalid ${field} market data for ${ticker}`,
+      );
+    }
+
+    return decimal;
   }
 }

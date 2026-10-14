@@ -23,7 +23,12 @@ export const openApiDocument = {
       get: {
         summary: 'Search instruments by ticker or name',
         parameters: [
-          { name: 'q', in: 'query', required: true, schema: { type: 'string' } },
+          {
+            name: 'q',
+            in: 'query',
+            required: true,
+            schema: { type: 'string', minLength: 2, maxLength: 50 },
+          },
           { name: 'page', in: 'query', schema: { type: 'integer', default: 1 } },
           { name: 'pageSize', in: 'query', schema: { type: 'integer', default: 20, maximum: 100 } },
         ],
