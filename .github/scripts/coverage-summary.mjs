@@ -1,11 +1,5 @@
-import { appendFile, readFile } from 'node:fs/promises';
+import { readFile } from 'node:fs/promises';
 import process from 'node:process';
-
-const summaryPath = process.env.GITHUB_STEP_SUMMARY;
-
-if (!summaryPath) {
-  throw new Error('GITHUB_STEP_SUMMARY is required to publish coverage');
-}
 
 const { total } = JSON.parse(await readFile('coverage/coverage-summary.json', 'utf8'));
 const metrics = ['lines', 'statements', 'functions', 'branches'];
@@ -20,7 +14,6 @@ const rows = metrics
   })
   .join('\n');
 
-await appendFile(
-  summaryPath,
-  `# ✅ Coverage gate passed\n\n> Required threshold: **80%** for lines, statements, functions, and branches.\n\n| Metric | Coverage | Covered | Gate |\n| --- | --- | ---: | --- |\n${rows}\n\n📦 Download the **\`coverage-report\`** artifact below to browse the full HTML report by file and line.\n`,
+process.stdout.write(
+  `# ✅ Coverage gate passed\n\n> Required threshold: **80%** for lines, statements, functions, and branches.\n\n| Metric | Coverage | Covered | Gate |\n| --- | --- | ---: | --- |\n${rows}\n\n📦 Download the **\`coverage-report\`** artifact below to browse the full HTML report by file and line.`,
 );
