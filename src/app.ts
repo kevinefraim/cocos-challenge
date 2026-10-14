@@ -19,7 +19,6 @@ const logger = pino({ level: env.LOG_LEVEL });
 export function createApp(dataSource: DataSource) {
   const app = express();
 
-  app.use(express.json());
   app.use(
     pinoHttp({
       logger,
@@ -30,6 +29,7 @@ export function createApp(dataSource: DataSource) {
     response.setHeader('x-request-id', String(request.id));
     next();
   });
+  app.use(express.json());
 
   app.get('/health', (request, response) => {
     response.status(200).json({ status: 'ok', requestId: request.id });

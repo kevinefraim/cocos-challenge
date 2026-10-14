@@ -183,6 +183,17 @@ describe('API end-to-end', () => {
     });
     expect(malformed.response.status).toBe(400);
     expect(malformed.body.error.code).toBe('INVALID_JSON');
+    expect(malformed.response.headers.get('x-request-id')).toEqual(expect.any(String));
+    expect(malformed.body.requestId).toEqual(expect.any(String));
+
+    const oversizedBody = await requestJson(`/users/${testUserId}/orders`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ padding: 'x'.repeat(102_400) }),
+    });
+    expect(oversizedBody.response.status).toBe(413);
+    expect(oversizedBody.response.headers.get('x-request-id')).toEqual(expect.any(String));
+    expect(oversizedBody.body.requestId).toEqual(expect.any(String));
 
     const missing = await requestJson('/missing-route');
     expect(missing.response.status).toBe(404);
@@ -197,6 +208,20 @@ describe('API end-to-end', () => {
 
     const excessivePage = await requestJson('/instruments?q=gas&page=10001&pageSize=20');
     expect(excessivePage.response.status).toBe(400);
+
+    const invalidUser = await requestJson('/users/0/orders', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        instrumentId: 1,
+        side: 'BUY',
+        type: 'LIMIT',
+        quantity: 1,
+        price: '1.00',
+      }),
+    });
+    expect(invalidUser.response.status).toBe(400);
+    expect(invalidUser.body.error.code).toBe('INVALID_USER_ID');
   });
 
   it('serializes concurrent market orders for one user', async () => {

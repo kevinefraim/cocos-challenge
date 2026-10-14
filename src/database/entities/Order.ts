@@ -37,11 +37,11 @@ export class Order {
   @Column({ type: 'timestamp' })
   datetime!: Date;
 
-  @ManyToOne(() => User, (user) => user.orders)
+  @ManyToOne(() => User)
   @JoinColumn({ name: 'userid' })
   user!: User;
 
-  @ManyToOne(() => Instrument, (instrument) => instrument.orders)
+  @ManyToOne(() => Instrument)
   @JoinColumn({ name: 'instrumentid' })
   instrument!: Instrument;
 }

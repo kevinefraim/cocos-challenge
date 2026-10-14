@@ -33,7 +33,7 @@ export class MarketData {
   @Column({ type: 'date' })
   date!: string;
 
-  @ManyToOne(() => Instrument, (instrument) => instrument.marketData)
+  @ManyToOne(() => Instrument)
   @JoinColumn({ name: 'instrumentid' })
   instrument!: Instrument;
 }

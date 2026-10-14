@@ -15,7 +15,12 @@ export class OrderController {
     const params = userOrderParamsSchema.safeParse(request.params);
     const body = createOrderBodySchema.safeParse(request.body);
 
-    if (!params.success || !body.success) {
+    if (!params.success) {
+      next(new AppError('INVALID_USER_ID', 400, 'User ID must be a positive integer'));
+      return;
+    }
+
+    if (!body.success) {
       next(new AppError('INVALID_ORDER', 400, 'Invalid order payload'));
       return;
     }
@@ -31,6 +36,12 @@ export class OrderController {
   };
 
   cancel = async (request: Request, response: Response, next: NextFunction) => {
+    const userParams = userOrderParamsSchema.safeParse(request.params);
+    if (!userParams.success) {
+      next(new AppError('INVALID_USER_ID', 400, 'User ID must be a positive integer'));
+      return;
+    }
+
     const params = cancelOrderParamsSchema.safeParse(request.params);
 
     if (!params.success) {
