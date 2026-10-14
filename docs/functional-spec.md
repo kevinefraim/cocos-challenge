@@ -46,7 +46,8 @@ may add `NEW -> FILLED`; it is not part of this challenge.
 - A `MARKET` order uses the instrument's latest `marketdata.close` price;
   clients must not supply a price.
 - “Latest” means the row ordered by `date DESC, id DESC`. A `MARKET` order is
-  rejected when the instrument has no market-data row.
+  rejected with `409` when the instrument has no market-data row or its latest
+  `close` is missing, zero, or negative.
 - A `LIMIT` order requires a positive client-supplied `price`.
 - Each trade supplies exactly one of `quantity` (positive integer) or `amount`
   (positive ARS amount). For `amount`, quantity is `floor(amount / effectivePrice)`.
@@ -146,8 +147,10 @@ not owned by that user and `409` when it is not `NEW`.
 
 ## Error contract
 
-Input failures return `400`; missing resources return `404`; illegal state
-transitions return `409`; unexpected errors return `500`.
+Input failures return `400` (or `413` when a JSON body exceeds the configured
+limit); missing resources return `404`; illegal state transitions and unavailable
+market data for a market order return `409`; an unavailable database or invalid
+quote needed to value a portfolio returns `503`; unexpected errors return `500`.
 
 ```json
 {

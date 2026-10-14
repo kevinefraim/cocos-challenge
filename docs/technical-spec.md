@@ -100,8 +100,9 @@ secret configuration and is never exposed through the API or logs.
   exercise successful market order, persisted `REJECTED` order caused by
   insufficient cash/holdings, and cancellation of a `NEW` limit order.
 - The required functional test for placing an order is included in this suite.
-- E2E tests remove their temporary orders in `afterEach`, run serially, and are
-  never pointed to an unrelated production database.
+- E2E tests create an isolated temporary user and seed cash for each test, then
+  remove that user's orders in `afterEach` and the user in `afterAll`. They run
+  serially and are never pointed to an unrelated production database.
 - `npm run test:coverage` enforces at least 80% lines, functions, branches, and
   statements across `src/` (excluding the process bootstrap in `server.ts`).
 
