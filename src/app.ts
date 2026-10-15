@@ -15,7 +15,11 @@ import { HTTP_STATUS, JSON_BODY_LIMIT, REQUEST_ID_HEADER } from './shared/http/c
 import { errorHandler } from './shared/middleware/error-handler.js';
 import { notFoundHandler } from './shared/middleware/not-found.js';
 
-export function createApp(dataSource: DataSource, logger: Logger = pino()) {
+export function createApp(
+  dataSource: DataSource,
+  logger: Logger = pino(),
+  commit: string | null = null,
+) {
   const app = express();
 
   app.use(
@@ -41,7 +45,7 @@ export function createApp(dataSource: DataSource, logger: Logger = pino()) {
   app.use(express.json({ limit: JSON_BODY_LIMIT }));
 
   app.get('/health', (request, response) => {
-    response.status(HTTP_STATUS.OK).json({ status: 'ok', requestId: request.id });
+    response.status(HTTP_STATUS.OK).json({ status: 'ok', commit, requestId: request.id });
   });
 
   app.get('/openapi.json', (_request, response) => {

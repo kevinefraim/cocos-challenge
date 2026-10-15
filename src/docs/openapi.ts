@@ -49,7 +49,12 @@ export const openApiDocument = {
   },
   paths: {
     '/health': {
-      get: { summary: 'Process liveness', responses: { 200: response('Alive', ref('Health')) } },
+      get: {
+        summary: 'Process liveness',
+        responses: {
+          200: response('Alive, with the deployed Git commit when available', ref('Liveness')),
+        },
+      },
     },
     '/ready': {
       get: {
@@ -130,6 +135,23 @@ export const openApiDocument = {
       OrderId: { name: 'orderId', in: 'path', required: true, schema: id },
     },
     schemas: {
+      Liveness: {
+        allOf: [
+          ref('Health'),
+          {
+            type: 'object',
+            required: ['commit'],
+            properties: {
+              commit: {
+                type: 'string',
+                nullable: true,
+                pattern: '^[a-f0-9]{40}$',
+                description: 'Render deployment commit SHA, or null outside Render.',
+              },
+            },
+          },
+        ],
+      },
       Error: {
         type: 'object',
         required: ['error', 'requestId'],

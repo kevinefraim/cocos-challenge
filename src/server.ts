@@ -6,7 +6,7 @@ import pino from 'pino';
 await appDataSource.initialize();
 
 const logger = pino({ level: env.LOG_LEVEL });
-const app = createApp(appDataSource, logger);
+const app = createApp(appDataSource, logger, env.RENDER_GIT_COMMIT ?? null);
 
 app.listen(env.PORT, () => {
   console.log(`API listening on port ${env.PORT}`);
