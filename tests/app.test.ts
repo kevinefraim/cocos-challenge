@@ -15,7 +15,7 @@ afterEach(async () => {
   }
 });
 
-async function start(repository = {}) {
+async function start(repository = {}, commit: string | null = null) {
   const lines: string[] = [];
   const logger = pino(
     { level: 'info' },
@@ -25,7 +25,7 @@ async function start(repository = {}) {
       },
     },
   );
-  const app = createApp({ getRepository: () => repository } as never, logger);
+  const app = createApp({ getRepository: () => repository } as never, logger, commit);
   await new Promise<void>((resolve) => {
     server = app.listen(0, '127.0.0.1', resolve);
   });
@@ -35,6 +35,16 @@ async function start(repository = {}) {
 }
 
 describe('runtime endpoints', () => {
+  it.each([null, 'a'.repeat(40)])('exposes the deployed commit in health (%s)', async (commit) => {
+    const { url } = await start({}, commit);
+    const response = await fetch(`${url}/health`);
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({
+      status: 'ok',
+      commit,
+      requestId: expect.any(String),
+    });
+  });
   it('omits secrets from request logs while retaining correlation', async () => {
     const { url, lines } = await start();
     const response = await fetch(`${url}/health?token=SECRET_SENTINEL`, {

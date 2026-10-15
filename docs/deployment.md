@@ -17,6 +17,11 @@ One-time setup:
 5. Open the generated `onrender.com` URL and verify `/health`, `/ready`, and
    `/docs`.
 
+`GET /health` includes `commit`, obtained from Render's automatic
+`RENDER_GIT_COMMIT` variable. After merging a PR, compare this value with the
+merge commit SHA to confirm that automatic deployment finished. This variable
+needs no manual configuration. Outside Render, `commit` is null.
+
 The free service is suitable for an interview demo: it may spin down after 15
 minutes of inactivity and take time to wake up. It is not an uptime guarantee.
 

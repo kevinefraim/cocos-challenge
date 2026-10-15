@@ -70,9 +70,11 @@ async function requestJson(path: string, init?: RequestInit) {
             ? 'Portfolio'
             : path.startsWith('/instruments')
               ? 'InstrumentSearch'
-              : path === '/health' || path === '/ready'
-                ? 'Health'
-                : null;
+              : path === '/health'
+                ? 'Liveness'
+                : path === '/ready'
+                  ? 'Health'
+                  : null;
   if (schema) {
     const validate = contractFor(schema);
     expect(validate(body), JSON.stringify(validate.errors)).toBe(true);
