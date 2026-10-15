@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [master]
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    name: Quality
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run format:check
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run build
+      - run: npm run smoke:runtime
+      - run: npm test
+      - name: Build Docker image
+        run: docker build --tag cocos-backend-challenge:${{ github.sha }} .
+
+  end-to-end:
+    name: E2E and coverage
+    runs-on: ubuntu-latest
+    needs: quality
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL_E2E }}
+      LOG_LEVEL: fatal
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Require E2E database secret
+        run: test -n "$DATABASE_URL"
+      - run: npm run test:coverage

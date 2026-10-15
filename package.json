@@ -1,0 +1,55 @@
+{
+  "name": "cocos-backend-challenge",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Backend challenge for Cocos",
+  "engines": {
+    "node": ">=24 <25"
+  },
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc -p tsconfig.json",
+    "smoke:runtime": "node --input-type=module -e \"await import('./dist/database/entities/User.js'); await import('./dist/database/entities/Instrument.js'); await import('./dist/database/entities/Order.js'); await import('./dist/database/entities/MarketData.js')\"",
+    "start": "node dist/server.js",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "vitest run --exclude tests/**/*.e2e.test.ts",
+    "test:integration": "npm run test:e2e",
+    "test:e2e": "vitest run tests/api.e2e.test.ts --maxWorkers=1",
+    "test:coverage": "vitest run --coverage --maxWorkers=1",
+    "docker:up": "docker compose up --build",
+    "docker:down": "docker compose down"
+  },
+  "dependencies": {
+    "decimal.js": "^10.6.0",
+    "dotenv": "^16.6.1",
+    "express": "^5.1.0",
+    "pg": "^8.16.3",
+    "pino": "^9.9.0",
+    "pino-http": "^10.5.0",
+    "reflect-metadata": "^0.2.2",
+    "swagger-ui-express": "^5.0.1",
+    "typeorm": "^0.3.26",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.5",
+    "@types/express": "^5.0.3",
+    "@types/node": "^24.3.0",
+    "@types/pg": "^8.15.5",
+    "@types/swagger-ui-express": "^4.1.8",
+    "@vitest/coverage-v8": "^5.0.4",
+    "ajv": "^8.20.0",
+    "ajv-formats": "^3.0.1",
+    "eslint": "^9.39.5",
+    "eslint-config-prettier": "^10.1.8",
+    "prettier": "^3.9.10",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.2",
+    "typescript-eslint": "^8.71.2",
+    "vitest": "^5.0.4"
+  }
+}
