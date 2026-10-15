@@ -1,7 +1,12 @@
-import { Decimal } from 'decimal.js';
+import { Decimal } from '../../shared/money/decimal.js';
 import { z } from 'zod';
+import {
+  identifierSchema,
+  MAX_DATABASE_INTEGER,
+  userParamsSchema,
+} from '../../shared/validation/identifiers.js';
 
-export const MAX_ORDER_SIZE = 2_147_483_647;
+export const MAX_ORDER_SIZE = MAX_DATABASE_INTEGER;
 const MAX_PERSISTED_PRICE = new Decimal('99999999.99');
 
 const positiveMoney = z
@@ -15,17 +20,15 @@ const persistedPrice = positiveMoney.refine(
   'Exceeds the database price limit',
 );
 
-export const userOrderParamsSchema = z.object({
-  userId: z.coerce.number().int().positive(),
-});
+export const userOrderParamsSchema = userParamsSchema;
 
 export const cancelOrderParamsSchema = userOrderParamsSchema.extend({
-  orderId: z.coerce.number().int().positive(),
+  orderId: z.coerce.number().pipe(identifierSchema),
 });
 
 export const createOrderBodySchema = z
   .object({
-    instrumentId: z.number().int().positive(),
+    instrumentId: identifierSchema,
     side: z.enum(['BUY', 'SELL']),
     type: z.enum(['MARKET', 'LIMIT']),
     quantity: z.number().int().positive().max(MAX_ORDER_SIZE).optional(),

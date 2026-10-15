@@ -19,6 +19,11 @@ const ERROR_DEFINITIONS = {
   PAYLOAD_TOO_LARGE: [HTTP_STATUS.PAYLOAD_TOO_LARGE, 'Request body exceeds the allowed size'],
   QUANTITY_TOO_LARGE: [HTTP_STATUS.BAD_REQUEST, 'Order quantity exceeds the supported limit'],
   USER_NOT_FOUND: [HTTP_STATUS.NOT_FOUND, 'User not found'],
+  UNSUPPORTED_MEDIA_TYPE: [
+    HTTP_STATUS.UNSUPPORTED_MEDIA_TYPE,
+    'Unsupported JSON charset or content encoding',
+  ],
+  INVALID_REQUEST_BODY: [HTTP_STATUS.BAD_REQUEST, 'Invalid request body'],
 } as const;
 
 export type ErrorCode = keyof typeof ERROR_DEFINITIONS;

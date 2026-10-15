@@ -12,7 +12,13 @@ const user = { id: 7, email: 'investor@example.com', accountNumber: 'ACC-7' } as
 const instrument = (id: number, type = 'ACCION') =>
   ({ id, ticker: `TICK${id}`, name: `Instrument ${id}`, type }) as Instrument;
 
-const order = (id: number, side: string, size: number, price: string, security = instrument(10)) =>
+const order = (
+  id: number,
+  side: string,
+  size: number,
+  price: string | null,
+  security = instrument(10),
+) =>
   ({
     id,
     userId: user.id,
@@ -37,6 +43,13 @@ function serviceFor(orders: Order[], quotes: MarketData[], existingUser: User | 
 }
 
 describe('PortfolioService', () => {
+  it('processes nullable cash prices from historical data', async () => {
+    const result = await serviceFor(
+      [order(1, 'CASH_IN', 100, null), order(2, 'CASH_OUT', 10, null)],
+      [],
+    ).getPortfolio(user.id);
+    expect(result).toMatchObject({ availableCash: '90.00', accountTotal: '90.00', positions: [] });
+  });
   it('rejects a portfolio request for an absent user', async () => {
     await expect(serviceFor([], [], null).getPortfolio(user.id)).rejects.toMatchObject({
       code: 'USER_NOT_FOUND',

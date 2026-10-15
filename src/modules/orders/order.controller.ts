@@ -27,8 +27,20 @@ export class OrderController {
     }
 
     try {
+      const result = await this.orderService.create(params.data.userId, body.data);
+      request.log.info(
+        {
+          event: 'order.created',
+          requestId: request.id,
+          userId: params.data.userId,
+          orderId: result.order.id,
+          status: result.order.status,
+          rejectionReason: result.rejectionReason,
+        },
+        'Order committed',
+      );
       response.status(HTTP_STATUS.CREATED).json({
-        ...(await this.orderService.create(params.data.userId, body.data)),
+        ...result,
         requestId: request.id,
       });
     } catch (error) {
@@ -51,8 +63,19 @@ export class OrderController {
     }
 
     try {
+      const order = await this.orderService.cancel(params.data.userId, params.data.orderId);
+      request.log.info(
+        {
+          event: 'order.cancelled',
+          requestId: request.id,
+          userId: params.data.userId,
+          orderId: order.id,
+          status: order.status,
+        },
+        'Order cancellation committed',
+      );
       response.status(HTTP_STATUS.OK).json({
-        ...(await this.orderService.cancel(params.data.userId, params.data.orderId)),
+        ...order,
         requestId: request.id,
       });
     } catch (error) {

@@ -1,4 +1,4 @@
-import { Decimal } from 'decimal.js';
+import { Decimal } from '../../shared/money/decimal.js';
 import type { DataSource } from 'typeorm';
 
 import type { Order } from '../../database/entities/Order.js';
@@ -104,10 +104,9 @@ export class OrderService {
 
   private calculateAvailableCash(orders: Order[]) {
     return orders.reduce((cash, order) => {
-      const notional = new Decimal(order.price).mul(order.size);
-
       if (order.side === 'CASH_IN') return cash.plus(order.size);
       if (order.side === 'CASH_OUT') return cash.minus(order.size);
+      const notional = new Decimal(order.price!).mul(order.size);
       if (order.side === 'BUY') return cash.minus(notional);
       if (order.side === 'SELL') return cash.plus(notional);
 

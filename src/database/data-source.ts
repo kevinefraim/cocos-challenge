@@ -1,4 +1,5 @@
 import 'reflect-metadata';
+import './utc-timestamps.js';
 import { DataSource } from 'typeorm';
 
 import { env } from '../config/env.js';

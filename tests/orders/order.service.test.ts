@@ -55,6 +55,17 @@ describe('OrderService', () => {
     expect(result.order).toMatchObject({ status: 'NEW', price: '10.00' });
   });
 
+  it('uses cash size even when historical cash has no price', async () => {
+    const cash = { ...cashIn(10), price: null };
+    const result = await serviceFor({ close: '10.00', filledOrders: [cash] }).create(user.id, {
+      instrumentId: instrument.id,
+      side: 'BUY',
+      type: 'MARKET',
+      quantity: 1,
+    });
+    expect(result.order.status).toBe('FILLED');
+  });
+
   it('uses the rounded persisted market price for amount conversion and balance validation', async () => {
     const result = await serviceFor({ close: '10.005', filledOrders: [cashIn(90)] }).create(
       user.id,

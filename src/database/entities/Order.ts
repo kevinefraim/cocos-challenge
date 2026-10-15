@@ -22,8 +22,8 @@ export class Order {
   @Column({ type: 'int' })
   size!: number;
 
-  @Column({ type: 'numeric', transformer: decimalTransformer })
-  price!: string;
+  @Column({ type: 'numeric', nullable: true, transformer: decimalTransformer })
+  price!: string | null;
 
   @Column({ type: 'varchar' })
   side!: string;

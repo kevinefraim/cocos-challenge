@@ -1,4 +1,4 @@
-import { Decimal } from 'decimal.js';
+import { Decimal } from '../../shared/money/decimal.js';
 
 import { createAppError } from '../../shared/errors/error-catalog.js';
 import type { PortfolioRepository } from './portfolio.repository.js';
@@ -29,9 +29,6 @@ export class PortfolioService {
     let availableCash = new Decimal(0);
 
     for (const order of orders) {
-      const price = new Decimal(order.price);
-      const notional = price.mul(order.size);
-
       if (order.side === 'CASH_IN') {
         availableCash = availableCash.plus(order.size);
         continue;
@@ -45,6 +42,9 @@ export class PortfolioService {
       if (order.instrument.type === 'MONEDA') {
         continue;
       }
+
+      const price = new Decimal(order.price!);
+      const notional = price.mul(order.size);
 
       const position = positions.get(order.instrumentId) ?? {
         instrumentId: order.instrumentId,

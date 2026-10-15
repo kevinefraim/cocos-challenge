@@ -1,11 +1,9 @@
 import type { NextFunction, Request, Response } from 'express';
-import { z } from 'zod';
+import { userParamsSchema } from '../../shared/validation/identifiers.js';
 
 import { createAppError } from '../../shared/errors/error-catalog.js';
 import { HTTP_STATUS } from '../../shared/http/constants.js';
 import type { PortfolioService } from './portfolio.service.js';
-
-const userParamsSchema = z.object({ userId: z.coerce.number().int().positive() });
 
 export class PortfolioController {
   constructor(private readonly portfolioService: PortfolioService) {}

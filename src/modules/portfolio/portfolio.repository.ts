@@ -1,4 +1,4 @@
-import type { DataSource } from 'typeorm';
+import { In, type DataSource } from 'typeorm';
 
 import { MarketData } from '../../database/entities/MarketData.js';
 import { Order } from '../../database/entities/Order.js';
@@ -27,9 +27,9 @@ export class PortfolioRepository {
     return this.dataSource
       .getRepository(MarketData)
       .createQueryBuilder('marketData')
-      .distinctOn(['marketData.instrumentid'])
-      .where('marketData.instrumentid IN (:...instrumentIds)', { instrumentIds })
-      .orderBy('marketData.instrumentid', 'ASC')
+      .distinctOn(['marketData.instrumentId'])
+      .setFindOptions({ where: { instrumentId: In(instrumentIds) } })
+      .orderBy('marketData.instrumentId', 'ASC')
       .addOrderBy('marketData.date', 'DESC')
       .addOrderBy('marketData.id', 'DESC')
       .getMany();

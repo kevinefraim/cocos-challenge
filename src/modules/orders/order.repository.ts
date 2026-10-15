@@ -7,12 +7,10 @@ import { User } from '../../database/entities/User.js';
 
 export class OrderRepository {
   findUserForUpdate(manager: EntityManager, userId: number) {
-    return manager
-      .getRepository(User)
-      .createQueryBuilder('user')
-      .setLock('pessimistic_write')
-      .where('user.id = :userId', { userId })
-      .getOne();
+    return manager.getRepository(User).findOne({
+      where: { id: userId },
+      lock: { mode: 'pessimistic_write' },
+    });
   }
 
   findInstrument(manager: EntityManager, instrumentId: number) {
@@ -44,13 +42,10 @@ export class OrderRepository {
   }
 
   findOrderForUpdate(manager: EntityManager, userId: number, orderId: number) {
-    return manager
-      .getRepository(Order)
-      .createQueryBuilder('order')
-      .setLock('pessimistic_write')
-      .where('order.id = :orderId', { orderId })
-      .andWhere('order.userid = :userId', { userId })
-      .getOne();
+    return manager.getRepository(Order).findOne({
+      where: { id: orderId, userId },
+      lock: { mode: 'pessimistic_write' },
+    });
   }
 
   save(manager: EntityManager, order: Order) {

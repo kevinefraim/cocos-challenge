@@ -1,11 +1,11 @@
 import { randomUUID } from 'node:crypto';
 import express from 'express';
-import pino from 'pino';
+import pino, { type Logger } from 'pino';
 import { pinoHttp } from 'pino-http';
 import swaggerUi from 'swagger-ui-express';
 import type { DataSource } from 'typeorm';
 
-import { env } from './config/env.js';
+import { User } from './database/entities/User.js';
 import { openApiDocument } from './docs/openapi.js';
 import { createInstrumentRouter } from './modules/instruments/instrument.routes.js';
 import { createOrderRouter } from './modules/orders/order.routes.js';
@@ -15,14 +15,22 @@ import { HTTP_STATUS, JSON_BODY_LIMIT, REQUEST_ID_HEADER } from './shared/http/c
 import { errorHandler } from './shared/middleware/error-handler.js';
 import { notFoundHandler } from './shared/middleware/not-found.js';
 
-const logger = pino({ level: env.LOG_LEVEL });
-
-export function createApp(dataSource: DataSource) {
+export function createApp(dataSource: DataSource, logger: Logger = pino()) {
   const app = express();
 
   app.use(
     pinoHttp({
       logger,
+      // Allowlist: headers, query strings, bodies and raw error messages may contain secrets.
+      serializers: {
+        req: (request) => ({
+          id: request.id,
+          method: request.method,
+          path: request.url?.split('?')[0],
+        }),
+        res: (response) => ({ statusCode: response.statusCode }),
+        err: (error) => ({ type: error.type, code: error.code }),
+      },
       genReqId: (request) => request.headers[REQUEST_ID_HEADER]?.toString() ?? randomUUID(),
     }),
   );
@@ -44,7 +52,7 @@ export function createApp(dataSource: DataSource) {
 
   app.get('/ready', async (request, response, next) => {
     try {
-      await dataSource.query('SELECT 1');
+      await dataSource.getRepository(User).exists();
       response.status(HTTP_STATUS.OK).json({ status: 'ready', requestId: request.id });
     } catch {
       next(createAppError('DATABASE_UNAVAILABLE'));
