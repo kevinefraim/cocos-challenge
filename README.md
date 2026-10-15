@@ -3,6 +3,14 @@
 REST API for a simplified ARS investment account, implemented with Node.js,
 TypeScript, Express, TypeORM, and PostgreSQL.
 
+- Live API: https://cocos-backend-challenge.onrender.com
+- Interactive documentation: https://cocos-backend-challenge.onrender.com/docs/
+- Original assignment: [backend-challenge.md](backend-challenge.md).
+- CI: [GitHub Actions](https://github.com/kevinefraim/cocos-challenge/actions).
+
+The demo may take time to wake up after inactivity. Local and deployed requests
+use the same supplied database, so submitted trades persist in both environments.
+
 The product and implementation decisions are documented in
 [`docs/functional-spec.md`](docs/functional-spec.md) and
 [`docs/technical-spec.md`](docs/technical-spec.md).
@@ -14,7 +22,7 @@ The product and implementation decisions are documented in
 2. Install and start the service:
 
    ```bash
-   npm install
+   npm ci
    npm run dev
    ```
 
@@ -44,10 +52,19 @@ restarts the API after a change. It was verified with Node.js 24. Use
 Insufficient cash or holdings produces a persisted `REJECTED` order. Every
 trade sends either `quantity` or an ARS `amount`, never both.
 
-The ready-to-import [Postman collection](postman/cocos-backend-challenge.postman_collection.json)
-uses `baseUrl`, `userId`, and `orderId` variables. The limit-order example saves
-its order ID and the next request cancels it, so it does not leave a pending
-order behind.
+Import the [Postman collection](postman/cocos-backend-challenge.postman_collection.json)
+and both environments:
+
+- [Cocos - Local](postman/local.postman_environment.json): `http://localhost:3000`.
+- [Cocos - Render](postman/render.postman_environment.json): the deployed API.
+
+Select the environment in Postman to switch targets. `userId` defaults to 1 and
+can be changed. The examples cover market buys by quantity or ARS budget, a sale,
+a limit order, cancellation and rejection. Run the limit creation before its
+cancellation: it saves `orderId` in the selected environment so switching targets
+does not reuse a different environment's saved ID. Execute both requests to
+avoid leaving a pending order. Valid trades require available cash or holdings;
+rejections return 201 with status REJECTED, not an HTTP failure.
 
 ## Concurrency
 
@@ -69,9 +86,9 @@ npm run typecheck
 npm run build
 ```
 
-Integration tests use the supplied database. They create temporary orders and
-temporary users, clean them after each run, and do not point `DATABASE_URL` at
-an unrelated production database.
+Integration tests use the supplied database. They create temporary users,
+instruments, quotes and orders, then clean only their tracked fixtures. Do not
+point `DATABASE_URL` at an unrelated production database.
 
 ## CI
 
@@ -104,12 +121,14 @@ container health check against `/health`.
 ## Deployment
 
 [`render.yaml`](render.yaml) is the CD configuration for Render's free Docker
-web-service tier. Connect this repository as a Render Blueprint, set
-`DATABASE_URL` as a secret, and keep `autoDeployTrigger: checksPass` so Render
-builds the Dockerfile and deploys only after GitHub Actions succeeds. Free
+web-service tier. The deployment is live and the automatic PR → merge → CI →
+Render flow was verified with [PR #2](https://github.com/kevinefraim/cocos-challenge/pull/2).
+`GET /health` reports the deployed Git commit, making it possible to verify the
+running revision independently of build logs. Render builds the Dockerfile
+with `autoDeployTrigger: checksPass`. Free
 services spin down after inactivity, so this is appropriate for the challenge
 demo rather than a production SLA. See [docs/deployment.md](docs/deployment.md)
-for the one-time setup.
+for setup and deployment verification.
 
 The application uses the supplied schema as-is: TypeORM has
 `synchronize: false` and does not apply automatic migrations.

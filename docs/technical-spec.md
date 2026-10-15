@@ -118,10 +118,10 @@ Delivery includes a non-root Docker image with a health check, Compose for
 local execution, and CI that runs formatting, linting, type-checking, build,
 runtime-import smoke testing, Docker image build, unit tests, and end-to-end
 coverage. Compose fixes internal PORT to 3000 and publishes the .env PORT on the
-host. Render's Docker Blueprint is prepared to deploy `master` after CI checks
-pass; account connection and actual deployment verification remain external
-setup. The
-deployed API uses the same provided PostgreSQL database as local execution. Its
+host. Render's Docker Blueprint deploys `master` after CI checks pass. The
+live service and automatic deployment were verified through PR #2; `/health`
+reports the exact deployed Git commit. See the deployment runbook for evidence
+and setup instructions. The deployed API uses the same provided PostgreSQL database as local execution. Its
 connection URL remains deployment-secret configuration and is never exposed
 through the API or logs.
 

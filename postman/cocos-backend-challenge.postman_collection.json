@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "bc0cf055-fb44-4eee-9a01-5b877ee4bc7b",
     "name": "Cocos Backend Challenge",
-    "description": "HTTP collection for the Cocos backend challenge. Set baseUrl and userId for the target environment.",
+    "description": "Import this collection plus local.postman_environment.json and render.postman_environment.json, then select Cocos - Local or Cocos - Render. Both environments use the same challenge database: submitted trades persist. userId defaults to 1. Read-only requests are grouped first. Create a NEW limit order before running its cancellation; the ID is saved in the selected environment.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -60,6 +60,30 @@
           }
         },
         {
+          "name": "Create market order by ARS amount",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"instrumentId\": 1,\n  \"side\": \"BUY\",\n  \"type\": \"MARKET\",\n  \"amount\": \"1000.00\"\n}"
+            },
+            "url": "{{baseUrl}}/users/{{userId}}/orders"
+          }
+        },
+        {
+          "name": "Sell one share (requires holdings)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"instrumentId\": 1,\n  \"side\": \"SELL\",\n  \"type\": \"MARKET\",\n  \"quantity\": 1\n}"
+            },
+            "url": "{{baseUrl}}/users/{{userId}}/orders"
+          }
+        },
+        {
           "name": "Create limit order and save ID",
           "event": [
             {
@@ -68,7 +92,12 @@
                 "exec": [
                   "const body = pm.response.json();",
                   "pm.expect(pm.response.code).to.equal(201);",
-                  "pm.collectionVariables.set('orderId', body.order.id);"
+                  "pm.expect(body.order.status).to.equal('NEW');",
+                  "if (pm.environment.get('baseUrl')) {",
+                  "  pm.environment.set('orderId', String(body.order.id));",
+                  "} else {",
+                  "  pm.collectionVariables.set('orderId', String(body.order.id));",
+                  "}"
                 ]
               }
             }
