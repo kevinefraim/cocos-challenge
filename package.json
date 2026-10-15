@@ -42,6 +42,8 @@
     "@types/pg": "^8.15.5",
     "@types/swagger-ui-express": "^4.1.8",
     "@vitest/coverage-v8": "^5.0.4",
+    "ajv": "^8.20.0",
+    "ajv-formats": "^3.0.1",
     "eslint": "^9.39.5",
     "eslint-config-prettier": "^10.1.8",
     "prettier": "^3.9.10",

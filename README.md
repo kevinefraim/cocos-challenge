@@ -95,6 +95,9 @@ docker compose up --build
 ```
 
 It uses the same `.env` and external PostgreSQL database as local Node.js.
+`PORT` selects the published host port; the container always listens on 3000.
+The driver reads and writes timezone-less timestamps as UTC across local and
+deployed processes.
 Stop it with `docker compose down`. The image runs as a non-root user and has a
 container health check against `/health`.
 

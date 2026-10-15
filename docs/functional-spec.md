@@ -89,7 +89,9 @@ Only `FILLED` orders affect balances and positions.
 
 ## HTTP contract
 
-All responses are JSON. IDs are positive integers.
+API responses are JSON (the `/docs` UI is HTML). IDs are positive integers up
+to 2147483647. Datetimes are UTC ISO-8601 strings; historical timestamps without
+an offset are interpreted as UTC.
 
 ### `GET /users/:userId/portfolio`
 
@@ -148,7 +150,7 @@ not owned by that user and `409` when it is not `NEW`.
 ## Error contract
 
 Input failures return `400` (or `413` when a JSON body exceeds the configured
-limit); missing resources return `404`; illegal state transitions and unavailable
+limit, or `415` for unsupported JSON charset/encoding); missing resources return `404`; illegal state transitions and unavailable
 market data for a market order return `409`; an unavailable database or invalid
 quote needed to value a portfolio returns `503`; unexpected errors return `500`.
 
