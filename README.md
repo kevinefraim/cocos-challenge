@@ -98,6 +98,9 @@ runs the E2E suite and the 80% coverage gate using the repository secret
 `DATABASE_URL_E2E`. Configure it with the same challenge PostgreSQL URL used
 locally; never commit that URL.
 
+Each job has a 10-minute limit. Runs for the same PR or branch are serialized;
+an active E2E run is allowed to finish its database cleanup before the next run.
+
 ## Docker
 
 ```bash
