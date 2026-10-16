@@ -8,10 +8,16 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  # Let running E2E finish so their finally hooks can clean database fixtures.
+  cancel-in-progress: false
+
 jobs:
   quality:
     name: Quality
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -31,6 +37,7 @@ jobs:
   end-to-end:
     name: E2E and coverage
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     needs: quality
     env:
       DATABASE_URL: ${{ secrets.DATABASE_URL_E2E }}
