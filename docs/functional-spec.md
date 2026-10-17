@@ -102,7 +102,7 @@ Returns `404` when the user does not exist.
   "userId": 1,
   "currency": "ARS",
   "availableCash": "815000.00",
-  "accountTotal": "1042030.00",
+  "accountTotal": "852034.00",
   "positions": [
     {
       "instrumentId": 47,
