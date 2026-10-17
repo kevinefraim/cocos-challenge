@@ -140,8 +140,7 @@ runner failure can still interrupt cleanup, as with any forced termination.
 Compose fixes internal PORT to 3000 and publishes the .env PORT on the
 host. Render's Docker Blueprint deploys `master` after CI checks pass. The
 live service and automatic deployment were verified through PR #2; `/health`
-reports the exact deployed Git commit. See the deployment runbook for evidence
-and setup instructions. The deployed API uses the same provided PostgreSQL database as local execution. Its
+reports the exact deployed Git commit. The deployed API uses the same provided PostgreSQL database as local execution. Its
 connection URL remains deployment-secret configuration and is never exposed
 through the API or logs.
 
