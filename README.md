@@ -8,7 +8,6 @@ implementada con Node.js, TypeScript, Express, TypeORM y PostgreSQL.
 - Consigna original: [backend-challenge.md](backend-challenge.md).
 - CI: [GitHub Actions](https://github.com/kevinefraim/cocos-challenge/actions).
 
-
 Las decisiones funcionales y técnicas están documentadas en
 [`docs/functional-spec.md`](docs/functional-spec.md) y
 [`docs/technical-spec.md`](docs/technical-spec.md).
@@ -120,15 +119,12 @@ sin privilegios de root y comprueba su estado mediante `/health`.
 ## Despliegue continuo (CD)
 
 [`render.yaml`](render.yaml) configura el despliegue Docker en el plan gratuito
-de Render. La API está desplegada y el flujo automático PR → merge → CI →
-Render.
+de Render. El flujo de despliegue automático es PR → merge → CI → Render.
 `GET /health` informa el commit desplegado para comprobar qué versión está
 atendiendo, sin depender de los logs del build. Render construye el Dockerfile
 con `autoDeployTrigger: checksPass`.
 
-El servicio gratuito se suspende tras un período de inactividad. La
-[guía de despliegue](docs/deployment.md) detalla la configuración y su verificación.
-
+El servicio gratuito se suspende tras un período de inactividad.
 
 ## Plan de evolución
 
