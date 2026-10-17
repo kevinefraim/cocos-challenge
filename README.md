@@ -135,3 +135,15 @@ for setup and deployment verification.
 
 The application uses the supplied schema as-is: TypeORM has
 `synchronize: false` and does not apply automatic migrations.
+
+## Evolution plan
+
+Evaluate two indexes as order and quote history grows:
+
+- `orders (userid, status, datetime, id)`: locate a user's filled orders and
+  read them chronologically for portfolio and balance calculations.
+- `marketdata (instrumentid, date DESC, id DESC)`: retrieve each instrument's
+  latest quote, using ID to break date ties.
+
+Validate with `EXPLAIN (ANALYZE, BUFFERS)` on representative data before adding
+them through a migration; indexes also increase storage and write costs.
