@@ -144,3 +144,11 @@ The application uses the supplied schema as-is: TypeORM has
   usuario en orden cronológico para calcular su portfolio y saldos.
 - `marketdata (instrumentid, date DESC, id DESC)`: obtener la última cotización
   de cada instrumento, usando el ID para desempatar fechas iguales.
+
+### Caché de instrumentos
+
+Cachear los datos y la paginación de `GET /instruments` para reducir consultas
+repetidas sobre un catálogo que cambia poco. La clave incluiría el texto de
+búsqueda normalizado, `page` y `pageSize`, con un vencimiento inicial de cinco
+minutos e invalidación cuando cambie el catálogo. Si la caché falla, consultar
+PostgreSQL. El `requestId` se generaría por petición, sin guardarlo en caché.
