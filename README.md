@@ -8,9 +8,6 @@ implementada con Node.js, TypeScript, Express, TypeORM y PostgreSQL.
 - Consigna original: [backend-challenge.md](backend-challenge.md).
 - CI: [GitHub Actions](https://github.com/kevinefraim/cocos-challenge/actions).
 
-La demo puede tardar en responder después de un período de inactividad. La API
-local y la desplegada usan la misma base provista: las operaciones enviadas
-persisten y son visibles desde ambos entornos.
 
 Las decisiones funcionales y técnicas están documentadas en
 [`docs/functional-spec.md`](docs/functional-spec.md) y
@@ -53,9 +50,6 @@ Las órdenes `MARKET` se ejecutan inmediatamente y quedan en estado `FILLED`;
 las `LIMIT` válidas quedan pendientes en `NEW`. Si no hay fondos o tenencias
 suficientes, se guarda una orden `REJECTED`. Cada operación envía `quantity`
 o un `amount` en pesos, nunca ambos.
-
-El alcance del challenge no incluye simular el mercado: las `LIMIT` no se
-ejecutan posteriormente ni reservan fondos o acciones; sólo pueden cancelarse.
 
 Importar la [colección de Postman](postman/cocos-backend-challenge.postman_collection.json)
 y los dos entornos:
@@ -101,12 +95,7 @@ generaron. No configurar `DATABASE_URL` con otra base de producción.
 En cada PR y cambio en `master`, GitHub Actions verifica formato, lint y tipos,
 compila la aplicación, ejecuta las pruebas unitarias y construye la imagen
 Docker. Después ejecuta los E2E y exige un 80% de cobertura usando el secreto
-del repositorio `DATABASE_URL_E2E`. Configurarlo con la misma conexión PostgreSQL
-del challenge que se usa localmente; nunca guardar esa URL en Git.
-
-Cada job tiene un máximo de 10 minutos. Las ejecuciones del mismo PR o rama se
-serializan para permitir que los E2E activos terminen su limpieza antes de
-comenzar la siguiente ejecución.
+del repositorio `DATABASE_URL_E2E`.
 
 ## Docker
 
@@ -123,8 +112,7 @@ docker compose up --build
 
 Usa el mismo `.env` y la misma base PostgreSQL externa que la ejecución local
 con Node.js. `PORT` define el puerto publicado en la máquina; el contenedor
-siempre escucha en el 3000. El driver interpreta y escribe los timestamps sin
-zona horaria como UTC, tanto localmente como en el despliegue.
+siempre escucha en el 3000.
 
 Para detenerlo, usar `docker compose down`. La imagen se ejecuta con un usuario
 sin privilegios de root y comprueba su estado mediante `/health`.
@@ -133,17 +121,14 @@ sin privilegios de root y comprueba su estado mediante `/health`.
 
 [`render.yaml`](render.yaml) configura el despliegue Docker en el plan gratuito
 de Render. La API está desplegada y el flujo automático PR → merge → CI →
-Render se verificó con el [PR #2](https://github.com/kevinefraim/cocos-challenge/pull/2).
+Render.
 `GET /health` informa el commit desplegado para comprobar qué versión está
 atendiendo, sin depender de los logs del build. Render construye el Dockerfile
 con `autoDeployTrigger: checksPass`.
 
-El servicio gratuito se suspende tras un período de inactividad: sirve para la
-demo del challenge, sin garantizar disponibilidad de producción. La
+El servicio gratuito se suspende tras un período de inactividad. La
 [guía de despliegue](docs/deployment.md) detalla la configuración y su verificación.
 
-La aplicación usa el esquema provisto sin modificarlo: TypeORM tiene
-`synchronize: false` y no aplica migraciones automáticas.
 
 ## Plan de evolución
 
