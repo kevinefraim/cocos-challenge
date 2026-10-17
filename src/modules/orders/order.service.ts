@@ -1,11 +1,10 @@
 import { Decimal } from '../../shared/money/decimal.js';
-import type { DataSource } from 'typeorm';
 
-import type { Order } from '../../database/entities/Order.js';
+import type { Order } from '../../domain/models.js';
 import { createAppError } from '../../shared/errors/error-catalog.js';
 import { HTTP_STATUS } from '../../shared/http/constants.js';
 import { canCancelOrder, getInitialOrderStatus, type OrderStatus } from './order-state-machine.js';
-import { MAX_ORDER_SIZE, type CreateOrderInput } from './order.schemas.js';
+import { MAX_ORDER_SIZE, type CreateOrderInput } from './order.types.js';
 import type { OrderRepository } from './order.repository.js';
 
 type CreateOrderResult = {
@@ -14,20 +13,17 @@ type CreateOrderResult = {
 };
 
 export class OrderService {
-  constructor(
-    private readonly dataSource: DataSource,
-    private readonly orderRepository: OrderRepository,
-  ) {}
+  constructor(private readonly orderRepository: OrderRepository) {}
 
   async create(userId: number, input: CreateOrderInput): Promise<CreateOrderResult> {
-    return this.dataSource.transaction(async (manager) => {
-      const user = await this.orderRepository.findUserForUpdate(manager, userId);
+    return this.orderRepository.withTransaction(async (repository) => {
+      const user = await repository.findUserForUpdate(userId);
 
       if (!user) {
         throw createAppError('USER_NOT_FOUND');
       }
 
-      const instrument = await this.orderRepository.findInstrument(manager, input.instrumentId);
+      const instrument = await repository.findInstrument(input.instrumentId);
 
       if (!instrument || instrument.type === 'MONEDA') {
         throw createAppError('INSTRUMENT_NOT_FOUND');
@@ -35,9 +31,7 @@ export class OrderService {
 
       const effectivePrice =
         input.type === 'MARKET'
-          ? this.getMarketPrice(
-              await this.orderRepository.findLatestMarketData(manager, instrument.id),
-            )
+          ? this.getMarketPrice(await repository.findLatestMarketData(instrument.id))
           : new Decimal(input.price!);
       const derivedQuantity =
         input.quantity === undefined
@@ -54,7 +48,7 @@ export class OrderService {
 
       const quantity = derivedQuantity.toNumber();
 
-      const filledOrders = await this.orderRepository.findFilledOrders(manager, user.id);
+      const filledOrders = await repository.findFilledOrders(user.id);
       const hasSufficientCash = this.calculateAvailableCash(filledOrders).greaterThanOrEqualTo(
         effectivePrice.mul(quantity),
       );
@@ -62,7 +56,7 @@ export class OrderService {
       const hasSufficientBalance = input.side === 'BUY' ? hasSufficientCash : hasSufficientHoldings;
       const status = getInitialOrderStatus(input.type, hasSufficientBalance);
 
-      const order = await this.orderRepository.create(manager, {
+      const order = await repository.create({
         instrumentId: instrument.id,
         userId: user.id,
         size: quantity,
@@ -86,8 +80,8 @@ export class OrderService {
   }
 
   async cancel(userId: number, orderId: number) {
-    return this.dataSource.transaction(async (manager) => {
-      const order = await this.orderRepository.findOrderForUpdate(manager, userId, orderId);
+    return this.orderRepository.withTransaction(async (repository) => {
+      const order = await repository.findOrderForUpdate(userId, orderId);
 
       if (!order) {
         throw createAppError('ORDER_NOT_FOUND');
@@ -98,7 +92,7 @@ export class OrderService {
       }
 
       order.status = 'CANCELLED';
-      return this.serializeOrder(await this.orderRepository.save(manager, order));
+      return this.serializeOrder(await repository.save(order));
     });
   }
 

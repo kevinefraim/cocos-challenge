@@ -9,6 +9,7 @@ import { Instrument } from '../src/database/entities/Instrument.js';
 import { Order } from '../src/database/entities/Order.js';
 import { User } from '../src/database/entities/User.js';
 import { MarketData } from '../src/database/entities/MarketData.js';
+import { TypeOrmOrderRepository } from '../src/database/repositories/typeorm-order.repository.js';
 import { In } from 'typeorm';
 import pino from 'pino';
 import { contractFor } from './contract.js';
@@ -136,6 +137,41 @@ describe('API end-to-end', { timeout: 30_000, hookTimeout: 30_000 }, () => {
 
   afterEach(async () => {
     await appDataSource.getRepository(Order).delete({ userId: In(fixtureUserIds) });
+  });
+
+  it('rolls back repository writes and releases locks when the transaction fails', async () => {
+    const repository = new TypeOrmOrderRepository(appDataSource);
+    const failure = new Error('Intentional rollback');
+    let rolledBackId: number | undefined;
+    await expect(
+      repository.withTransaction(async (transaction) => {
+        const user = await transaction.findUserForUpdate(testUserId);
+        expect(user).toEqual({ id: testUserId });
+        expect(Object.getPrototypeOf(user)).toBe(Object.prototype);
+        const created = await transaction.create({
+          userId: testUserId,
+          instrumentId,
+          size: 1,
+          price: '10000.00',
+          side: 'BUY',
+          status: 'FILLED',
+          type: 'MARKET',
+          datetime: new Date(),
+        });
+        rolledBackId = created.id;
+        expect(Object.getPrototypeOf(created)).toBe(Object.prototype);
+        expect(created).not.toHaveProperty('user');
+        expect(created).not.toHaveProperty('instrument');
+        throw failure;
+      }),
+    ).rejects.toBe(failure);
+    expect(rolledBackId).toBeDefined();
+    expect(await appDataSource.getRepository(Order).findOneBy({ id: rolledBackId! })).toBeNull();
+    // Otra operación HTTP sobre la misma cuenta puede tomar el lock y confirmar.
+    const result = await place({ instrumentId, side: 'BUY', type: 'MARKET', quantity: 1 });
+    expect(result.response.status).toBe(201);
+    expect(result.body.order.status).toBe('FILLED');
+    expect((await portfolio()).availableCash).toBe('990000.00');
   });
 
   afterAll(async () => {

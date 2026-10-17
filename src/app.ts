@@ -6,6 +6,10 @@ import swaggerUi from 'swagger-ui-express';
 import type { DataSource } from 'typeorm';
 
 import { User } from './database/entities/User.js';
+import { Instrument } from './database/entities/Instrument.js';
+import { TypeOrmInstrumentRepository } from './database/repositories/typeorm-instrument.repository.js';
+import { TypeOrmOrderRepository } from './database/repositories/typeorm-order.repository.js';
+import { TypeOrmPortfolioRepository } from './database/repositories/typeorm-portfolio.repository.js';
 import { openApiDocument } from './docs/openapi.js';
 import { createInstrumentRouter } from './modules/instruments/instrument.routes.js';
 import { createOrderRouter } from './modules/orders/order.routes.js';
@@ -63,9 +67,13 @@ export function createApp(
     }
   });
 
-  app.use('/instruments', createInstrumentRouter(dataSource));
-  app.use('/users', createOrderRouter(dataSource));
-  app.use('/users', createPortfolioRouter(dataSource));
+  // Composition root: sólo aquí se eligen las implementaciones de persistencia.
+  app.use(
+    '/instruments',
+    createInstrumentRouter(new TypeOrmInstrumentRepository(dataSource.getRepository(Instrument))),
+  );
+  app.use('/users', createOrderRouter(new TypeOrmOrderRepository(dataSource)));
+  app.use('/users', createPortfolioRouter(new TypeOrmPortfolioRepository(dataSource)));
 
   app.use(notFoundHandler);
   app.use(errorHandler);

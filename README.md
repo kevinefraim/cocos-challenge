@@ -1,105 +1,112 @@
-# Cocos backend challenge
+# Challenge backend de Cocos
 
-REST API for a simplified ARS investment account, implemented with Node.js,
-TypeScript, Express, TypeORM, and PostgreSQL.
+API REST para una cuenta de inversiones simplificada en pesos argentinos,
+implementada con Node.js, TypeScript, Express, TypeORM y PostgreSQL.
 
-- Live API: https://cocos-backend-challenge.onrender.com
-- Interactive documentation: https://cocos-backend-challenge.onrender.com/docs/
-- Original assignment: [backend-challenge.md](backend-challenge.md).
+- API desplegada: https://cocos-backend-challenge.onrender.com
+- Documentación interactiva: https://cocos-backend-challenge.onrender.com/docs/
+- Consigna original: [backend-challenge.md](backend-challenge.md).
 - CI: [GitHub Actions](https://github.com/kevinefraim/cocos-challenge/actions).
 
-The demo may take time to wake up after inactivity. Local and deployed requests
-use the same supplied database, so submitted trades persist in both environments.
+La demo puede tardar en responder después de un período de inactividad. La API
+local y la desplegada usan la misma base provista: las operaciones enviadas
+persisten y son visibles desde ambos entornos.
 
-The product and implementation decisions are documented in
-[`docs/functional-spec.md`](docs/functional-spec.md) and
+Las decisiones funcionales y técnicas están documentadas en
+[`docs/functional-spec.md`](docs/functional-spec.md) y
 [`docs/technical-spec.md`](docs/technical-spec.md).
 
-## Run locally
+## Ejecución local
 
-1. Create `.env` from `.env.example` and set `DATABASE_URL` to the supplied
-   PostgreSQL connection URL.
-2. Install and start the service:
+1. Crear `.env` a partir de `.env.example` y configurar `DATABASE_URL` con la
+   conexión PostgreSQL provista.
+2. Instalar las dependencias e iniciar el servicio con Node.js 24:
 
    ```bash
    npm ci
    npm run dev
    ```
 
-The service is available at `http://localhost:3000`.
+El servicio queda disponible en `http://localhost:3000`.
 
-`npm run dev` is the development entry point: it watches TypeScript sources and
-restarts the API after a change. It was verified with Node.js 24. Use
-`npm run build && npm start` only to exercise the production artifact.
+`npm run dev` es el comando de desarrollo: observa los archivos TypeScript y
+reinicia la API cuando cambian. No requiere compilar previamente. Para probar
+la versión compilada de producción, usar `npm run build && npm start`.
 
-| URL             | Purpose                     |
-| --------------- | --------------------------- |
-| `/health`       | Process liveness check.     |
-| `/ready`        | PostgreSQL readiness check. |
-| `/docs`         | Swagger UI.                 |
-| `/openapi.json` | OpenAPI document.           |
+| URL             | Propósito                                 |
+| --------------- | ----------------------------------------- |
+| `/health`       | Estado del proceso y commit desplegado.   |
+| `/ready`        | Comprobación de la conexión a PostgreSQL. |
+| `/docs`         | Documentación interactiva de Swagger.     |
+| `/openapi.json` | Contrato OpenAPI.                         |
 
 ## API
 
-| Method  | Endpoint                                | Purpose                                            |
-| ------- | --------------------------------------- | -------------------------------------------------- |
-| `GET`   | `/users/:userId/portfolio`              | Available ARS, total account value, and positions. |
-| `GET`   | `/instruments?q=...&page=1&pageSize=20` | Search tradable instruments by ticker or name.     |
-| `POST`  | `/users/:userId/orders`                 | Create `MARKET` or `LIMIT` buy/sell order.         |
-| `PATCH` | `/users/:userId/orders/:orderId/cancel` | Cancel a pending limit order.                      |
+| Método  | Endpoint                                | Propósito                                                 |
+| ------- | --------------------------------------- | --------------------------------------------------------- |
+| `GET`   | `/users/:userId/portfolio`              | Pesos disponibles, valor total de la cuenta y posiciones. |
+| `GET`   | `/instruments?q=...&page=1&pageSize=20` | Búsqueda de instrumentos por ticker o nombre.             |
+| `POST`  | `/users/:userId/orders`                 | Crear una compra o venta `MARKET` o `LIMIT`.              |
+| `PATCH` | `/users/:userId/orders/:orderId/cancel` | Cancelar una orden límite pendiente.                      |
 
-`MARKET` orders are immediately `FILLED`; valid `LIMIT` orders are `NEW`.
-Insufficient cash or holdings produces a persisted `REJECTED` order. Every
-trade sends either `quantity` or an ARS `amount`, never both.
+Las órdenes `MARKET` se ejecutan inmediatamente y quedan en estado `FILLED`;
+las `LIMIT` válidas quedan pendientes en `NEW`. Si no hay fondos o tenencias
+suficientes, se guarda una orden `REJECTED`. Cada operación envía `quantity`
+o un `amount` en pesos, nunca ambos.
 
-Import the [Postman collection](postman/cocos-backend-challenge.postman_collection.json)
-and both environments:
+El alcance del challenge no incluye simular el mercado: las `LIMIT` no se
+ejecutan posteriormente ni reservan fondos o acciones; sólo pueden cancelarse.
+
+Importar la [colección de Postman](postman/cocos-backend-challenge.postman_collection.json)
+y los dos entornos:
 
 - [Cocos - Local](postman/local.postman_environment.json): `http://localhost:3000`.
-- [Cocos - Render](postman/render.postman_environment.json): the deployed API.
+- [Cocos - Render](postman/render.postman_environment.json): la API desplegada.
 
-Select the environment in Postman to switch targets. `userId` defaults to 1 and
-can be changed. The examples cover market buys by quantity or ARS budget, a sale,
-a limit order, cancellation and rejection. Run the limit creation before its
-cancellation: it saves `orderId` in the selected environment so switching targets
-does not reuse a different environment's saved ID. Execute both requests to
-avoid leaving a pending order. Valid trades require available cash or holdings;
-rejections return 201 with status REJECTED, not an HTTP failure.
+Seleccionar el entorno en Postman para elegir dónde probar. `userId` vale 1 por
+defecto y puede modificarse. Los ejemplos incluyen compras por cantidad o monto,
+venta, orden límite, cancelación y rechazo. Crear la orden límite antes de
+cancelarla: su `orderId` se guarda en el entorno seleccionado para evitar
+reutilizar el ID de otro entorno. Ejecutar ambas peticiones para no dejar una
+orden pendiente. Las operaciones requieren fondos o tenencias suficientes;
+un rechazo de negocio devuelve HTTP 201 con estado `REJECTED` porque la orden
+quedó persistida.
 
-## Concurrency
+## Concurrencia
 
-Order creation executes in a PostgreSQL transaction and locks the user's row
-with `SELECT ... FOR UPDATE` before calculating cash or holdings. This
-serializes concurrent writes for the same user and prevents double spending or
-overselling. Cancellation locks the target order row before applying
-`NEW -> CANCELLED`.
+La creación de órdenes se ejecuta en una transacción PostgreSQL. TypeORM
+bloquea la fila del usuario con `SELECT ... FOR UPDATE` antes de calcular sus
+fondos y tenencias. Esto serializa las escrituras del mismo usuario y evita
+gastar dos veces los mismos fondos o vender más acciones de las disponibles.
+La cancelación bloquea la fila de la orden antes de aplicar `NEW -> CANCELLED`.
 
-## Tests
+## Pruebas
 
 ```bash
-npm test                 # unit tests; no database writes
-npm run test:e2e         # real HTTP + supplied PostgreSQL database
-npm run test:coverage    # E2E + unit tests; enforces 80% coverage
+npm test                 # pruebas unitarias; sin escrituras en la base
+npm run test:e2e         # HTTP real y PostgreSQL provisto
+npm run test:coverage    # E2E y unitarias; exige un 80% de cobertura
 npm run lint
 npm run format:check
 npm run typecheck
 npm run build
 ```
 
-Integration tests use the supplied database. They create temporary users,
-instruments, quotes and orders, then clean only their tracked fixtures. Do not
-point `DATABASE_URL` at an unrelated production database.
+Las pruebas de integración usan la base provista. Crean usuarios, instrumentos,
+cotizaciones y órdenes temporales, y limpian únicamente los registros que
+generaron. No configurar `DATABASE_URL` con otra base de producción.
 
-## CI
+## Integración continua (CI)
 
-GitHub Actions runs formatting, linting, type checking, build, and unit tests
-and builds the Docker image on every pull request and push to `master`. It then
-runs the E2E suite and the 80% coverage gate using the repository secret
-`DATABASE_URL_E2E`. Configure it with the same challenge PostgreSQL URL used
-locally; never commit that URL.
+En cada PR y cambio en `master`, GitHub Actions verifica formato, lint y tipos,
+compila la aplicación, ejecuta las pruebas unitarias y construye la imagen
+Docker. Después ejecuta los E2E y exige un 80% de cobertura usando el secreto
+del repositorio `DATABASE_URL_E2E`. Configurarlo con la misma conexión PostgreSQL
+del challenge que se usa localmente; nunca guardar esa URL en Git.
 
-Each job has a 10-minute limit. Runs for the same PR or branch are serialized;
-an active E2E run is allowed to finish its database cleanup before the next run.
+Cada job tiene un máximo de 10 minutos. Las ejecuciones del mismo PR o rama se
+serializan para permitir que los E2E activos terminen su limpieza antes de
+comenzar la siguiente ejecución.
 
 ## Docker
 
@@ -108,30 +115,69 @@ docker build -t cocos-backend-challenge .
 docker run --rm --env-file .env -p 3000:3000 cocos-backend-challenge
 ```
 
-For the normal local workflow, Docker Compose is simpler:
+Para levantar el servicio localmente con Docker Compose:
 
 ```bash
 docker compose up --build
 ```
 
-It uses the same `.env` and external PostgreSQL database as local Node.js.
-`PORT` selects the published host port; the container always listens on 3000.
-The driver reads and writes timezone-less timestamps as UTC across local and
-deployed processes.
-Stop it with `docker compose down`. The image runs as a non-root user and has a
-container health check against `/health`.
+Usa el mismo `.env` y la misma base PostgreSQL externa que la ejecución local
+con Node.js. `PORT` define el puerto publicado en la máquina; el contenedor
+siempre escucha en el 3000. El driver interpreta y escribe los timestamps sin
+zona horaria como UTC, tanto localmente como en el despliegue.
 
-## Deployment
+Para detenerlo, usar `docker compose down`. La imagen se ejecuta con un usuario
+sin privilegios de root y comprueba su estado mediante `/health`.
 
-[`render.yaml`](render.yaml) is the CD configuration for Render's free Docker
-web-service tier. The deployment is live and the automatic PR → merge → CI →
-Render flow was verified with [PR #2](https://github.com/kevinefraim/cocos-challenge/pull/2).
-`GET /health` reports the deployed Git commit, making it possible to verify the
-running revision independently of build logs. Render builds the Dockerfile
-with `autoDeployTrigger: checksPass`. Free
-services spin down after inactivity, so this is appropriate for the challenge
-demo rather than a production SLA. See [docs/deployment.md](docs/deployment.md)
-for setup and deployment verification.
+## Despliegue continuo (CD)
 
-The application uses the supplied schema as-is: TypeORM has
-`synchronize: false` and does not apply automatic migrations.
+[`render.yaml`](render.yaml) configura el despliegue Docker en el plan gratuito
+de Render. La API está desplegada y el flujo automático PR → merge → CI →
+Render se verificó con el [PR #2](https://github.com/kevinefraim/cocos-challenge/pull/2).
+`GET /health` informa el commit desplegado para comprobar qué versión está
+atendiendo, sin depender de los logs del build. Render construye el Dockerfile
+con `autoDeployTrigger: checksPass`.
+
+El servicio gratuito se suspende tras un período de inactividad: sirve para la
+demo del challenge, sin garantizar disponibilidad de producción. La
+[guía de despliegue](docs/deployment.md) detalla la configuración y su verificación.
+
+La aplicación usa el esquema provisto sin modificarlo: TypeORM tiene
+`synchronize: false` y no aplica migraciones automáticas.
+
+## Plan de evolución
+
+### Índices
+
+- `orders (userid, status, datetime, id)`: obtener las órdenes ejecutadas de un
+  usuario en orden cronológico para calcular su portfolio y saldos.
+- `marketdata (instrumentid, date DESC, id DESC)`: obtener la última cotización
+  de cada instrumento, usando el ID para desempatar fechas iguales.
+
+### Caché de instrumentos
+
+Cachear los datos y la paginación de `GET /instruments` para reducir consultas
+repetidas sobre un catálogo que cambia poco. La clave incluiría el texto de
+búsqueda normalizado, `page` y `pageSize`, con un vencimiento inicial de cinco
+minutos e invalidación cuando cambie el catálogo. Si la caché falla, consultar
+PostgreSQL. El `requestId` se generaría por petición, sin guardarlo en caché.
+
+### Métricas
+
+Medir latencia por endpoint (p95/p99), tasa de errores, duración de consultas,
+espera de locks y uso del pool de conexiones. Complementar los logs actuales
+con alertas ante degradaciones del servicio.
+
+### Pruebas de carga
+
+Evaluar lecturas y órdenes concurrentes con historiales de distintos tamaños,
+midiendo latencia y capacidad sin perder consistencia de saldos y tenencias.
+Usar un entorno y datos de prueba aislados para estas mediciones.
+
+### Idempotencia de órdenes
+
+Aceptar una `Idempotency-Key` nueva por cada operación intencional y reutilizarla
+en sus reintentos. Guardarla junto con la orden en una transacción, con una
+restricción única por usuario y clave: repetir la clave y los datos devolvería
+la orden original; usarla con datos distintos devolvería un conflicto. Dos
+compras intencionales iguales llevarían claves diferentes y serían válidas.

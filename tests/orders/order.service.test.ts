@@ -1,32 +1,37 @@
 import { describe, expect, it } from 'vitest';
 
-import type { Instrument } from '../../src/database/entities/Instrument.js';
-import type { Order } from '../../src/database/entities/Order.js';
-import type { User } from '../../src/database/entities/User.js';
-import type { OrderRepository } from '../../src/modules/orders/order.repository.js';
+import type { Instrument, Order, User } from '../../src/domain/models.js';
+import type {
+  OrderRepository,
+  TransactionalOrderRepository,
+} from '../../src/modules/orders/order.repository.js';
 import { OrderService } from '../../src/modules/orders/order.service.js';
 
-const user = { id: 7 } as User;
-const instrument = { id: 10, type: 'ACCIONES' } as Instrument;
+const user: User = { id: 7 };
+const instrument: Instrument = { id: 10, type: 'ACCIONES', ticker: 'TEST', name: 'Test' };
 
 function serviceFor(options: { close: string | null; filledOrders?: Order[] }) {
   let nextOrderId = 1;
-  const repository = {
+  const transactional: TransactionalOrderRepository = {
     findUserForUpdate: async () => user,
     findInstrument: async () => instrument,
     findLatestMarketData: async () =>
-      options.close === null ? null : { instrumentId: instrument.id, close: options.close },
+      options.close === null
+        ? null
+        : { instrumentId: instrument.id, close: options.close, previousClose: null },
     findFilledOrders: async () => options.filledOrders ?? [],
-    create: async (_manager: unknown, order: Record<string, unknown>) => ({
+    create: async (order) => ({
       ...order,
       id: nextOrderId++,
     }),
-  } as unknown as OrderRepository;
-  const dataSource = {
-    transaction: async (callback: (manager: unknown) => unknown) => callback({}),
+    findOrderForUpdate: async () => null,
+    save: async (order) => order,
+  };
+  const repository: OrderRepository = {
+    withTransaction: async (callback) => callback(transactional),
   };
 
-  return new OrderService(dataSource as never, repository);
+  return new OrderService(repository);
 }
 
 const cashIn = (amount: number) =>
