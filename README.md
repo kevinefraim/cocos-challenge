@@ -164,3 +164,11 @@ con alertas ante degradaciones del servicio.
 Evaluar lecturas y órdenes concurrentes con historiales de distintos tamaños,
 midiendo latencia y capacidad sin perder consistencia de saldos y tenencias.
 Usar un entorno y datos de prueba aislados para estas mediciones.
+
+### Idempotencia de órdenes
+
+Aceptar una `Idempotency-Key` nueva por cada operación intencional y reutilizarla
+en sus reintentos. Guardarla junto con la orden en una transacción, con una
+restricción única por usuario y clave: repetir la clave y los datos devolvería
+la orden original; usarla con datos distintos devolvería un conflicto. Dos
+compras intencionales iguales llevarían claves diferentes y serían válidas.
