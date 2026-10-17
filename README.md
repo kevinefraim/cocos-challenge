@@ -152,3 +152,15 @@ repetidas sobre un catálogo que cambia poco. La clave incluiría el texto de
 búsqueda normalizado, `page` y `pageSize`, con un vencimiento inicial de cinco
 minutos e invalidación cuando cambie el catálogo. Si la caché falla, consultar
 PostgreSQL. El `requestId` se generaría por petición, sin guardarlo en caché.
+
+### Métricas
+
+Medir latencia por endpoint (p95/p99), tasa de errores, duración de consultas,
+espera de locks y uso del pool de conexiones. Complementar los logs actuales
+con alertas ante degradaciones del servicio.
+
+### Pruebas de carga
+
+Evaluar lecturas y órdenes concurrentes con historiales de distintos tamaños,
+midiendo latencia y capacidad sin perder consistencia de saldos y tenencias.
+Usar un entorno y datos de prueba aislados para estas mediciones.
