@@ -21,6 +21,8 @@ src/
   database/
     data-source.ts
     entities/{User,Instrument,Order,MarketData}.ts
+    repositories/{typeorm-order.repository,typeorm-portfolio.repository,typeorm-instrument.repository,mappers}.ts
+  domain/models.ts
   modules/
     portfolio/{portfolio.routes,portfolio.controller,portfolio.service,portfolio.repository}.ts
     instruments/{instruments.routes,instruments.controller,instruments.service,instruments.repository}.ts
@@ -29,9 +31,23 @@ src/
 tests/
 ```
 
-Routes expose HTTP only; controllers translate request/response; services own
-business rules and transactions; repositories isolate TypeORM/query-builder
-access. No generic repositories, event bus, CQRS, or microservices are used.
+## Separación de capas y persistencia
+
+Controllers traducen HTTP y services aplican reglas de negocio usando únicamente
+interfaces de repository y tipos de dominio. Las entidades decoradas de TypeORM
+permanecen en `database/entities`; los adapters de `database/repositories` convierten
+explícitamente esas entidades a objetos de dominio, sin filtrar relaciones del ORM.
+`app.ts` es el punto de composición que inyecta las implementaciones en las rutas.
+ESLint impide importar persistencia desde los módulos de negocio o el dominio.
+
+`OrderRepository.withTransaction` entrega un repository transaccional al callback.
+El service agrupa las operaciones atómicas, pero no recibe `DataSource` ni
+`EntityManager`. El adapter abre la transacción y administra commit, rollback y
+locks. El callback no debe conservar su repository fuera de esa transacción.
+Cambiar a Prisma requiere reemplazar los adapters y el armado de dependencias,
+conservando atomicidad, locks y ordenamiento definidos por los contratos; no basta
+con cambiar consultas si el nuevo motor no ofrece garantías equivalentes.
+No se agregan repositories genéricos ni capas extra.
 
 ## Data access and consistency
 

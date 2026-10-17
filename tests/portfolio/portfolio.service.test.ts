@@ -1,13 +1,15 @@
 import { describe, expect, it } from 'vitest';
 
-import type { Instrument } from '../../src/database/entities/Instrument.js';
-import type { MarketData } from '../../src/database/entities/MarketData.js';
-import type { Order } from '../../src/database/entities/Order.js';
-import type { User } from '../../src/database/entities/User.js';
+import type {
+  Instrument,
+  MarketData,
+  PortfolioOrder as Order,
+  User,
+} from '../../src/domain/models.js';
 import { PortfolioService } from '../../src/modules/portfolio/portfolio.service.js';
 import type { PortfolioRepository } from '../../src/modules/portfolio/portfolio.repository.js';
 
-const user = { id: 7, email: 'investor@example.com', accountNumber: 'ACC-7' } as User;
+const user: User = { id: 7 };
 
 const instrument = (id: number, type = 'ACCION') =>
   ({ id, ticker: `TICK${id}`, name: `Instrument ${id}`, type }) as Instrument;
@@ -33,11 +35,11 @@ const order = (
   }) as Order;
 
 function serviceFor(orders: Order[], quotes: MarketData[], existingUser: User | null = user) {
-  const repository = {
+  const repository: PortfolioRepository = {
     findUser: async () => existingUser,
     findFilledOrders: async () => orders,
     findLatestMarketData: async () => quotes,
-  } as unknown as PortfolioRepository;
+  };
 
   return new PortfolioService(repository);
 }

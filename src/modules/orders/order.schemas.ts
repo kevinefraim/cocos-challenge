@@ -1,12 +1,9 @@
 import { Decimal } from '../../shared/money/decimal.js';
 import { z } from 'zod';
-import {
-  identifierSchema,
-  MAX_DATABASE_INTEGER,
-  userParamsSchema,
-} from '../../shared/validation/identifiers.js';
+import { identifierSchema, userParamsSchema } from '../../shared/validation/identifiers.js';
 
-export const MAX_ORDER_SIZE = MAX_DATABASE_INTEGER;
+import { MAX_ORDER_SIZE } from './order.types.js';
+export { MAX_ORDER_SIZE } from './order.types.js';
 const MAX_PERSISTED_PRICE = new Decimal('99999999.99');
 
 const positiveMoney = z
@@ -61,4 +58,4 @@ export const createOrderBodySchema = z
     }
   });
 
-export type CreateOrderInput = z.infer<typeof createOrderBodySchema>;
+export type { CreateOrderInput } from './order.types.js';

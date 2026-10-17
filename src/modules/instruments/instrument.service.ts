@@ -1,4 +1,4 @@
-import type { SearchInstrumentsQuery } from './instrument.schemas.js';
+import type { SearchInstrumentsQuery } from './instrument.repository.js';
 import type { InstrumentRepository } from './instrument.repository.js';
 
 export class InstrumentService {

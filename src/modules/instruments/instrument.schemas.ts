@@ -6,4 +6,4 @@ export const searchInstrumentsQuerySchema = z.object({
   pageSize: z.coerce.number().int().min(1).max(100).default(20),
 });
 
-export type SearchInstrumentsQuery = z.infer<typeof searchInstrumentsQuerySchema>;
+export type { SearchInstrumentsQuery } from './instrument.repository.js';
