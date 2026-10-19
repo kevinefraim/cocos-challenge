@@ -2,13 +2,26 @@
   "info": {
     "_postman_id": "bc0cf055-fb44-4eee-9a01-5b877ee4bc7b",
     "name": "Cocos Backend Challenge",
-    "description": "Import this collection plus local.postman_environment.json and render.postman_environment.json, then select Cocos - Local or Cocos - Render. Both environments use the same challenge database: submitted trades persist. userId defaults to 1. Read-only requests are grouped first. Create a NEW limit order before running its cancellation; the ID is saved in the selected environment.",
+    "description": "Importar esta colección y los entornos Local y Render, y seleccionar dónde probar. Ambos usan la misma base del challenge: las órdenes se persisten. userId vale 1 e instrumentId vale 47 (PAMP) por defecto; se pueden cambiar. Las compras necesitan saldo y las ventas tenencia. No ejecutar toda la colección sobre una cuenta que no se quiera modificar. Crear una LIMIT válida antes de cancelarla; el ID se guarda en el entorno seleccionado y se limpia antes de intentar una nueva creación. La demo gratuita puede tardar en despertar.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
-    { "key": "baseUrl", "value": "http://localhost:3000" },
-    { "key": "userId", "value": "1" },
-    { "key": "orderId", "value": "" }
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000"
+    },
+    {
+      "key": "userId",
+      "value": "1"
+    },
+    {
+      "key": "instrumentId",
+      "value": "47"
+    },
+    {
+      "key": "orderId",
+      "value": ""
+    }
   ],
   "item": [
     {
@@ -16,15 +29,63 @@
       "item": [
         {
           "name": "Health",
-          "request": { "method": "GET", "url": "{{baseUrl}}/health" }
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/health"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('requestId presente', () => pm.expect(body.requestId).to.be.a('string').and.not.empty);"
+                ]
+              }
+            }
+          ]
         },
         {
           "name": "Readiness",
-          "request": { "method": "GET", "url": "{{baseUrl}}/ready" }
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/ready"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('requestId presente', () => pm.expect(body.requestId).to.be.a('string').and.not.empty);"
+                ]
+              }
+            }
+          ]
         },
         {
           "name": "OpenAPI document",
-          "request": { "method": "GET", "url": "{{baseUrl}}/openapi.json" }
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/openapi.json"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('Contrato OpenAPI', () => pm.expect(body.openapi).to.equal('3.0.3'));"
+                ]
+              }
+            }
+          ]
         }
       ]
     },
@@ -36,11 +97,40 @@
           "request": {
             "method": "GET",
             "url": "{{baseUrl}}/instruments?q=gas&page=1&pageSize=20"
-          }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('requestId presente', () => pm.expect(body.requestId).to.be.a('string').and.not.empty);"
+                ]
+              }
+            }
+          ]
         },
         {
           "name": "Get portfolio",
-          "request": { "method": "GET", "url": "{{baseUrl}}/users/{{userId}}/portfolio" }
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/users/{{userId}}/portfolio"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('requestId presente', () => pm.expect(body.requestId).to.be.a('string').and.not.empty);"
+                ]
+              }
+            }
+          ]
         }
       ]
     },
@@ -51,52 +141,123 @@
           "name": "Create market order by quantity",
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"instrumentId\": 1,\n  \"side\": \"BUY\",\n  \"type\": \"MARKET\",\n  \"quantity\": 1\n}"
+              "raw": "{\n  \"instrumentId\": {{instrumentId}},\n  \"side\": \"BUY\",\n  \"type\": \"MARKET\",\n  \"quantity\": 1\n}"
             },
             "url": "{{baseUrl}}/users/{{userId}}/orders"
-          }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "pm.test('requestId presente', () => pm.expect(body.requestId).to.be.a('string').and.not.empty);",
+                  "pm.test('Resultado MARKET', () => pm.expect(['FILLED', 'REJECTED']).to.include(body.order.status));"
+                ]
+              }
+            }
+          ]
         },
         {
           "name": "Create market order by ARS amount",
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"instrumentId\": 1,\n  \"side\": \"BUY\",\n  \"type\": \"MARKET\",\n  \"amount\": \"1000.00\"\n}"
+              "raw": "{\n  \"instrumentId\": {{instrumentId}},\n  \"side\": \"BUY\",\n  \"type\": \"MARKET\",\n  \"amount\": \"1000.00\"\n}"
             },
             "url": "{{baseUrl}}/users/{{userId}}/orders"
-          }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "pm.test('requestId presente', () => pm.expect(body.requestId).to.be.a('string').and.not.empty);",
+                  "pm.test('Resultado MARKET', () => pm.expect(['FILLED', 'REJECTED']).to.include(body.order.status));"
+                ]
+              }
+            }
+          ]
         },
         {
           "name": "Sell one share (requires holdings)",
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"instrumentId\": 1,\n  \"side\": \"SELL\",\n  \"type\": \"MARKET\",\n  \"quantity\": 1\n}"
+              "raw": "{\n  \"instrumentId\": {{instrumentId}},\n  \"side\": \"SELL\",\n  \"type\": \"MARKET\",\n  \"quantity\": 1\n}"
             },
             "url": "{{baseUrl}}/users/{{userId}}/orders"
-          }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "pm.test('requestId presente', () => pm.expect(body.requestId).to.be.a('string').and.not.empty);",
+                  "pm.test('Resultado MARKET', () => pm.expect(['FILLED', 'REJECTED']).to.include(body.order.status));"
+                ]
+              }
+            }
+          ]
         },
         {
           "name": "Create limit order and save ID",
           "event": [
             {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.environment.unset('orderId');",
+                  "pm.collectionVariables.unset('orderId');"
+                ]
+              }
+            },
+            {
               "listen": "test",
               "script": {
+                "type": "text/javascript",
                 "exec": [
+                  "pm.test('HTTP 201', () => pm.response.to.have.status(201));",
                   "const body = pm.response.json();",
-                  "pm.expect(pm.response.code).to.equal(201);",
-                  "pm.expect(body.order.status).to.equal('NEW');",
-                  "if (pm.environment.get('baseUrl')) {",
-                  "  pm.environment.set('orderId', String(body.order.id));",
-                  "} else {",
-                  "  pm.collectionVariables.set('orderId', String(body.order.id));",
+                  "pm.test('requestId presente', () => pm.expect(body.requestId).to.be.a('string').and.not.empty);",
+                  "pm.test('Orden LIMIT pendiente', () => pm.expect(body.order.status).to.equal('NEW'));",
+                  "if (pm.response.code === 201 && body.order && body.order.status === 'NEW') {",
+                  "  if (pm.environment.get('baseUrl')) {",
+                  "    pm.environment.set('orderId', String(body.order.id));",
+                  "  } else {",
+                  "    pm.collectionVariables.set('orderId', String(body.order.id));",
+                  "  }",
                   "}"
                 ]
               }
@@ -104,10 +265,15 @@
           ],
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"instrumentId\": 1,\n  \"side\": \"BUY\",\n  \"type\": \"LIMIT\",\n  \"quantity\": 1,\n  \"price\": \"1.00\"\n}"
+              "raw": "{\n  \"instrumentId\": {{instrumentId}},\n  \"side\": \"BUY\",\n  \"type\": \"LIMIT\",\n  \"quantity\": 1,\n  \"price\": \"1.00\"\n}"
             },
             "url": "{{baseUrl}}/users/{{userId}}/orders"
           }
@@ -117,19 +283,59 @@
           "request": {
             "method": "PATCH",
             "url": "{{baseUrl}}/users/{{userId}}/orders/{{orderId}}/cancel"
-          }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('requestId presente', () => pm.expect(body.requestId).to.be.a('string').and.not.empty);",
+                  "pm.test('Orden cancelada', () => pm.expect(body.status).to.equal('CANCELLED'));",
+                  "if (pm.response.code === 200 && body.status === 'CANCELLED') {",
+                  "  pm.environment.unset('orderId');",
+                  "  pm.collectionVariables.unset('orderId');",
+                  "}"
+                ]
+              }
+            }
+          ]
         },
         {
           "name": "Reject insufficient holdings",
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"instrumentId\": 47,\n  \"side\": \"SELL\",\n  \"type\": \"MARKET\",\n  \"quantity\": 999999\n}"
+              "raw": "{\n  \"instrumentId\": {{instrumentId}},\n  \"side\": \"SELL\",\n  \"type\": \"MARKET\",\n  \"quantity\": 999999\n}"
             },
             "url": "{{baseUrl}}/users/{{userId}}/orders"
-          }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "pm.test('requestId presente', () => pm.expect(body.requestId).to.be.a('string').and.not.empty);",
+                  "pm.test('Rechazo por tenencia', () => {",
+                  "  pm.expect(body.order.status).to.equal('REJECTED');",
+                  "  pm.expect(body.rejectionReason).to.equal('INSUFFICIENT_HOLDINGS');",
+                  "});"
+                ]
+              }
+            }
+          ]
         }
       ]
     }
