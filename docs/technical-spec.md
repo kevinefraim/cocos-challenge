@@ -25,15 +25,15 @@ src/
   domain/models.ts
   modules/
     portfolio/{portfolio.routes,portfolio.controller,portfolio.service,portfolio.repository}.ts
-    instruments/{instruments.routes,instruments.controller,instruments.service,instruments.repository}.ts
-    orders/{order.routes,order.controller,order.service,order.repository,order-state-machine,order.schemas}.ts
-  shared/{errors,middleware,types}/
+    instruments/{instrument.routes,instrument.controller,instrument.service,instrument.repository,instrument.schemas}.ts
+    orders/{order.routes,order.controller,order.service,order.repository,order-state-machine,order.schemas,order.types}.ts
+  shared/{errors,http,middleware,money,validation}/
 tests/
 ```
 
 ## Separación de capas y persistencia
 
-Controllers traducen HTTP y services aplican reglas de negocio usando únicamente
+Controllers traducen HTTP y services acceden a persistencia usando únicamente
 interfaces de repository y tipos de dominio. Las entidades decoradas de TypeORM
 permanecen en `database/entities`; los adapters de `database/repositories` convierten
 explícitamente esas entidades a objetos de dominio, sin filtrar relaciones del ORM.
@@ -48,6 +48,15 @@ Cambiar a Prisma requiere reemplazar los adapters y el armado de dependencias,
 conservando atomicidad, locks y ordenamiento definidos por los contratos; no basta
 con cambiar consultas si el nuevo motor no ofrece garantías equivalentes.
 No se agregan repositories genéricos ni capas extra.
+
+La separación buscada es respecto del ORM, no una arquitectura hexagonal pura:
+los errores compartidos todavía incluyen estados HTTP y el service de órdenes
+serializa fechas para su resultado. Zod valida las entradas en el controller;
+el service presupone un comando validado y sus tipos de entrada no expresan
+todas las combinaciones válidas mediante uniones discriminadas. Si se agrega
+otro punto de entrada (por ejemplo, un worker), deberá validar esos comandos
+antes de llamar al service. Son límites explícitos, no motivos para sumar capas
+o abstracciones al alcance actual.
 
 ## Data access and consistency
 
@@ -65,8 +74,9 @@ No se agregan repositories genéricos ni capas extra.
 - The supplied challenge schema is intentionally not modified. Portfolio
   reconstruction is therefore linear in a user's filled-order history and is
   proportionate for this exercise. A production migration would add indexes on
-  `orders (userid, status, datetime)`, `marketdata (instrumentid, date DESC)`,
-  and a trigram/search index for instrument lookup; sustained high-volume reads
+  `orders (userid, status, datetime, id)` and
+  `marketdata (instrumentid, date DESC, id DESC)`, matching the README evolution
+  plan and including deterministic tie-breaking; sustained high-volume reads
   would use a position projection or snapshot rather than replaying all orders.
 - The order service runs validation and insertion in one transaction. It locks
   the parent `users` row (`SELECT ... FOR UPDATE`) before calculating available
@@ -85,6 +95,10 @@ No se agregan repositories genéricos ni capas extra.
   summing maximum supported order notionals. Precision remains bounded: each
   quantity is int32 and input budgets have at most 20 characters. Cash movements
   use size alone, including historical records whose irrelevant price is NULL.
+- MARKET redondea el precio efectivo a dos decimales con `ROUND_HALF_UP` antes
+  de calcular cantidad y saldo; la conversión por monto aplica `floor`. El
+  portfolio conserva la precisión de las cotizaciones y de los cálculos
+  intermedios y formatea los importes y porcentajes de salida a dos decimales.
 - For the supplied TIMESTAMP WITHOUT TIME ZONE columns, pg serializes Date
   inputs in UTC and parses results as UTC regardless of host timezone. Existing
   wall-clock values have no recoverable offset and are assumed UTC, not migrated.
@@ -151,6 +165,10 @@ through the API or logs.
   exercise successful market order, persisted `REJECTED` order caused by
   insufficient cash/holdings, and cancellation of a `NEW` limit order.
 - The required functional test for placing an order is included in this suite.
+- Una prueba adicional con PostgreSQL real inserta una orden dentro del adapter,
+  provoca un error y verifica que se propague el mismo error, que la inserción
+  se revierta y que una operación HTTP posterior pueda tomar el lock y confirmar.
+  También comprueba que el adapter entregue objetos planos sin relaciones del ORM.
 - E2E tests create UUID-marked users, dedicated instruments and deterministic
   quotes. They verify persisted rejection states, exact balance reconciliation,
   successful sales, concurrent buys/sales/cancellation, ownership, boundaries,
