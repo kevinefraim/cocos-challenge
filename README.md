@@ -56,11 +56,12 @@ y los dos entornos:
 - [Cocos - Local](postman/local.postman_environment.json): `http://localhost:3000`.
 - [Cocos - Render](postman/render.postman_environment.json): la API desplegada.
 
-Seleccionar el entorno en Postman para elegir dónde probar. `userId` vale 1 por
-defecto y puede modificarse. Los ejemplos incluyen compras por cantidad o monto,
+Seleccionar el entorno en Postman para elegir dónde probar. `userId` vale 1 e
+`instrumentId` vale 47 (PAMP) por defecto; ambos pueden modificarse. Los ejemplos incluyen compras por cantidad o monto,
 venta, orden límite, cancelación y rechazo. Crear la orden límite antes de
 cancelarla: su `orderId` se guarda en el entorno seleccionado para evitar
-reutilizar el ID de otro entorno. Ejecutar ambas peticiones para no dejar una
+reutilizar el ID de otro entorno. El ID anterior se limpia antes de una nueva
+creación y después de una cancelación exitosa. Ejecutar ambas peticiones para no dejar una
 orden pendiente. Las operaciones requieren fondos o tenencias suficientes;
 un rechazo de negocio devuelve HTTP 201 con estado `REJECTED` porque la orden
 quedó persistida.
